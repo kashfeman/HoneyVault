@@ -1,0 +1,11 @@
+{% extends layout %}
+{% from 'components/ui.html' import notice, badge %}
+{% block title %}{{ document.title }}{% endblock %}
+{% block content %}
+<a class="inline-link back-link" href="{{ '/dashboard' if admin else '/employee' }}/documents">← Back to document library</a>
+<div class="heading-row"><header class="page-heading"><p class="eyebrow">DOCUMENT PREVIEW</p><h1>{{ document.title }}</h1><p class="muted">{{ document.description }}</p></header>{{ badge(document.format) }}</div>
+{{ notice() }}
+<section class="card preview-metadata" aria-label="Document metadata"><dl class="document-meta"><div><dt>Category</dt><dd>{{ document.category }}</dd></div><div><dt>Owner</dt><dd>{{ document.owner }}</dd></div><div><dt>Updated</dt><dd>{{ document.updated }}</dd></div><div><dt>Reference</dt><dd>{{ document.id }}</dd></div></dl></section>
+<section class="card preview-content" aria-labelledby="content-title"><div class="section-heading"><div><h2 id="content-title">{{ document.format }} content</h2><p class="muted">Complete fictional UI fixture · Read-only</p></div>{{ badge('Demo') }}</div><pre tabindex="0" aria-label="Fictional {{ document.format }} document content">{{ document.content }}</pre></section>
+<aside class="card preview-boundary"><div><h2>Preview only</h2><p class="muted">This page renders a fixed presentation fixture. Real server-controlled document access and downloads require future backend integration. Nothing is monitored or recorded.</p></div><div><button class="button" disabled aria-describedby="download-note">Download unavailable</button><p class="muted" id="download-note">Backend integration pending</p></div></aside>
+{% endblock %}

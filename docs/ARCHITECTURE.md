@@ -111,3 +111,27 @@ backend routes must implement security before connecting real view models.
 Preview smoke tests are rendering checks, not security tests.
 
 Exact setup, preview, test commands and manual browser checks are in README.md.
+
+## Employee and document presentation extension
+
+The same isolated preview runner now serves `/employee`, `/employee/documents`,
+and `/employee/documents/<document_id>`, plus corresponding document routes under
+`/dashboard/documents`. Employee templates use their own layout and navigation;
+administrator document pages reuse the existing administrator shell. Neither
+layout enforces a role. Existing login and overview routes retain their behavior.
+
+`scripts/frontend_data.py` owns all public document presentation records. The
+records intentionally have no decoy classification, sensitivity or policy fields.
+No such metadata is serialized into employee HTML, attributes, JSON or scripts.
+The examples are fictional guides, schedules, budgets and planning text; they
+are not private files. A future security inventory must remain separate from
+employee-facing view models and enforce access through production blueprints.
+
+GET search/category/sort parameters filter these in-memory fixtures only.
+Templates render cards, a table alternative and escaped CSV/TXT preview text.
+The small local `documents.js` toggles views without persistence or network calls.
+No loading simulation is needed for synchronous rendering. Downloads remain
+disabled and explicitly pending backend integration. No monitoring or audit
+events are produced. Unknown document IDs return a recoverable 404, not an access
+decision. New focused tests cover rendering, filter behavior, escaping, missing
+references, classification-free responses and the view switch.

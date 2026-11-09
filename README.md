@@ -65,6 +65,61 @@ paid dependency or external request. Semantic landmarks, labels, textual severit
 visible focus outlines, skip navigation and a text alternative for the chart are
 included. Navigation stays visible without JavaScript.
 
+## Employee portal and document library preview
+
+The employee experience extends the existing theme and local preview runner.
+Open these public routes (no login or role checks):
+
+| Route | Purpose |
+| --- | --- |
+| `/employee` | Welcome, library summary and recently updated documents |
+| `/employee/documents` | Searchable employee library with category and sorting controls |
+| `/employee/documents/doc-102` | Example fictional CSV preview |
+| `/employee/documents/doc-101` | Example fictional TXT preview |
+| `/dashboard/documents` | Library inside the administrator layout |
+| `/dashboard/documents/doc-102` | Document preview inside the administrator layout |
+
+The original `/login`, `/dashboard` and root redirect remain available. The login
+page and administrator navigation link to the employee preview. Unknown document
+references show a 404 page with a library recovery link.
+
+`scripts/frontend_data.py` is the single source of six public document fixtures,
+their metadata and text content. These include ordinary working resources and
+plausible budget/planning examples. There is deliberately no decoy classification,
+sensitivity or authorization field in these records or employee responses.
+Administrator library pages use the same public fixtures, not a security inventory.
+
+Search matches title, description, category, owner and format (case insensitive).
+Apply combines search, category and sort using a GET request against local fixtures;
+it works without JavaScript. Example:
+`/employee/documents?q=budget&category=Finance&sort=title`.
+Sort choices are `newest`, `oldest` and `title`. Reset clears the filters.
+JavaScript adds a keyboard-operable card/table view switch; the default card view
+works without it. No query or view preference is saved by the application.
+Search terms appear in the URL and may remain in browser history; use fictional
+queries only. Content is rendered as escaped plain text, including CSV.
+There is no artificial loading delay or asynchronous document fetch.
+
+Existing run commands above are unchanged. Run targeted checks:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_employee_frontend.py" -v
+node --test tests/test_document_views.cjs
+```
+
+Node is optional for the dependency-free view-switch test, and is not needed to
+run the preview. No npm installation is required. Python tests verify filtering,
+sorting, empty states, public routes, escaped content, unknown references and
+absence of classification data in rendered pages.
+
+Manually review the employee home, library and preview at 375px, 768px and 1440px.
+Check keyboard navigation, menu Escape behavior, card/table switching, horizontal
+table and content scrolling, combined filters, empty results and no-JavaScript
+operation. Browser visual and assistive-technology validation is still manual.
+Downloads are disabled with an explicit backend-pending explanation. There is no
+monitoring, alert generation or persistence; actual server-controlled document
+access remains future work.
+
 ## Future backend integration
 
 Preview routes and fixtures are separate from production packages. Future Flask

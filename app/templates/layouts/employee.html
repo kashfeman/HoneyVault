@@ -1,0 +1,11 @@
+{% extends 'layouts/base.html' %}
+{% block body %}
+<div class="app-shell">
+  {% include 'components/employee_sidebar.html' %}
+  <div class="workspace">
+    <header class="topbar"><div class="topbar-start"><button class="button menu-toggle" type="button" aria-controls="sidebar" aria-expanded="false" hidden>Menu</button><span>Employee workspace <span class="breadcrumb">/ {{ 'Home' if request.endpoint == 'employee' else 'Documents' }}</span></span></div><span class="profile"><span class="avatar" aria-hidden="true">DE</span> Demo employee</span></header>
+    <main id="main" class="dashboard-main" tabindex="-1">{% block content %}{% endblock %}</main>
+    <footer>HoneyVault · Fictional workspace <span>Public frontend demonstration</span></footer>
+  </div>
+</div>
+{% endblock %}

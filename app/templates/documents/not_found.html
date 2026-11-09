@@ -1,0 +1,7 @@
+{% extends layout %}
+{% from 'components/ui.html' import notice %}
+{% block title %}Document not found{% endblock %}
+{% block content %}
+{{ notice() }}
+<section class="card empty-state"><p class="eyebrow">PUBLIC DEMO LIBRARY</p><h1>Document not found</h1><p class="muted">That reference is not part of the fictional demo collection.</p><a class="button button-primary" href="{{ '/dashboard' if admin else '/employee' }}/documents">Browse the library</a></section>
+{% endblock %}

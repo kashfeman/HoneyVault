@@ -2,7 +2,12 @@
 
 from pathlib import Path
 
-from flask import Flask, redirect, render_template, url_for
+from flask import Flask, redirect, render_template, request, url_for
+
+if __package__:
+    from .frontend_data import CATEGORIES, DOCUMENTS, SORTS, select_documents
+else:
+    from frontend_data import CATEGORIES, DOCUMENTS, SORTS, select_documents
 
 
 def create_preview_app():
@@ -28,6 +33,37 @@ def create_preview_app():
             dict(id="DEMO-005", actor="Demo analyst 04", action="Document viewed", document="Sample team handbook", time="14:24 UTC", severity="low"),
         ]
         return render_template("dashboard/index.html", events=events)
+
+    @app.get("/employee")
+    def employee():
+        return render_template("employee/index.html", documents=DOCUMENTS[:3],
+                               total=len(DOCUMENTS), categories=CATEGORIES)
+
+    @app.get("/employee/documents")
+    @app.get("/dashboard/documents")
+    def library():
+        admin = request.path.startswith("/dashboard/")
+        query = request.args.get("q", "")[:120]
+        category = request.args.get("category", "")
+        category = category if category in CATEGORIES else ""
+        sort = request.args.get("sort", "newest")
+        sort = sort if sort in SORTS else "newest"
+        return render_template("documents/library.html", admin=admin,
+                               layout="layouts/dashboard.html" if admin else "layouts/employee.html",
+                               documents=select_documents(query, category, sort),
+                               categories=CATEGORIES, sorts=SORTS, query=query,
+                               category=category, sort=sort, total=len(DOCUMENTS))
+
+    @app.get("/employee/documents/<document_id>")
+    @app.get("/dashboard/documents/<document_id>")
+    def document_preview(document_id):
+        admin = request.path.startswith("/dashboard/")
+        document = next((item for item in DOCUMENTS if item["id"] == document_id), None)
+        if document is None:
+            return render_template("documents/not_found.html", admin=admin,
+                                   layout="layouts/dashboard.html" if admin else "layouts/employee.html"), 404
+        return render_template("documents/preview.html", document=document, admin=admin,
+                               layout="layouts/dashboard.html" if admin else "layouts/employee.html")
 
     return app
 

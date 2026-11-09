@@ -1,5 +1,5 @@
-{% macro brand() -%}
-<a class="brand" href="{{ url_for('dashboard') }}" aria-label="HoneyVault demo dashboard"><span class="brand-mark" aria-hidden="true">H</span><span>Honey<span class="accent">Vault</span><small>INSIDER THREAT INTELLIGENCE</small></span></a>
+{% macro brand(destination='dashboard') -%}
+<a class="brand" href="{{ url_for(destination) }}" aria-label="HoneyVault demo workspace"><span class="brand-mark" aria-hidden="true">H</span><span>Honey<span class="accent">Vault</span><small>INSIDER THREAT INTELLIGENCE</small></span></a>
 {%- endmacro %}
 
 {% macro badge(label, tone='neutral') -%}

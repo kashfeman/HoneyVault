@@ -1,0 +1,14 @@
+{% from 'components/ui.html' import badge %}
+{% macro document_cards(documents, admin=false) -%}
+<div class="document-grid">
+{% for document in documents %}
+  <article class="card document-card">
+    <div class="document-card-top"><span class="file-symbol" aria-hidden="true">▤</span>{{ badge(document.format) }}</div>
+    <p class="eyebrow">{{ document.category }}</p><h2><a href="{{ '/dashboard' if admin else '/employee' }}/documents/{{ document.id }}">{{ document.title }}</a></h2>
+    <p class="muted document-description">{{ document.description }}</p>
+    <dl class="document-meta"><div><dt>Owner</dt><dd>{{ document.owner }}</dd></div><div><dt>Updated</dt><dd><time datetime="{{ document.updated }}">{{ document.updated }}</time></dd></div></dl>
+    <a class="button document-preview-link" href="{{ '/dashboard' if admin else '/employee' }}/documents/{{ document.id }}" aria-label="Preview {{ document.title }}">Preview document <span aria-hidden="true">→</span></a>
+  </article>
+{% endfor %}
+</div>
+{%- endmacro %}

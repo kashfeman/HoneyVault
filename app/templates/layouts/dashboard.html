@@ -3,7 +3,7 @@
 <div class="app-shell">
   {% include 'components/sidebar.html' %}
   <div class="workspace">
-    <header class="topbar"><div class="topbar-start"><button class="button menu-toggle" type="button" aria-controls="sidebar" aria-expanded="false" hidden>Menu</button><span>Workspace <span class="breadcrumb">/ Overview</span></span></div><span class="profile"><span class="avatar" aria-hidden="true">DA</span> Demo administrator</span></header>
+    <header class="topbar"><div class="topbar-start"><button class="button menu-toggle" type="button" aria-controls="sidebar" aria-expanded="false" hidden>Menu</button><span>Workspace <span class="breadcrumb">/ {{ 'Overview' if request.endpoint == 'dashboard' else 'Documents' }}</span></span></div><span class="profile"><span class="avatar" aria-hidden="true">DA</span> Demo administrator</span></header>
     <main id="main" class="dashboard-main" tabindex="-1">{% block content %}{% endblock %}</main>
     <footer>HoneyVault · University security demonstration <span>Milestone 2 / UI preview</span></footer>
   </div>
