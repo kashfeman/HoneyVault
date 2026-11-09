@@ -1,0 +1,26 @@
+{% extends 'layouts/dashboard.html' %}
+{% from 'components/ui.html' import heading, notice, metric, badge, event_table %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<div class="heading-row">{{ heading('VISIBILITY STARTS HERE', 'Security overview', 'Explore a fictional snapshot of document activity and insider risk.') }}<span class="date-label">09 Nov 2026 <span>Fixed demo snapshot · UTC</span></span></div>
+{{ notice() }}
+<section class="metrics" aria-label="Synthetic demo metrics">
+  {{ metric('Demo documents', '128', '96 sample files · 32 decoys') }}
+  {{ metric('Document interactions', '846', 'Illustrative activity in 24 hours', 'blue') }}
+  {{ metric('Illustrative alerts', '12', '3 high · 5 medium · 4 low', 'amber') }}
+  {{ metric('Demo actors', '24', 'Fictional identities only', 'purple') }}
+</section>
+<div class="insight-grid">
+  <section class="card" id="activity"><div class="section-heading"><div><h2>Document activity</h2><p class="muted">Synthetic interactions across a fictional day</p></div>{{ badge('Demo') }}</div>
+    <div class="chart-legend"><span><i class="legend-dot cyan"></i> Sample documents</span><span><i class="legend-dot blue"></i> Decoy documents</span></div>
+    <div class="bar-chart" role="img" aria-label="Demo interactions, sample and decoy: 00:00 35 and 10; 04:00 20 and 8; 08:00 95 and 30; 12:00 140 and 50; 16:00 180 and 80; 20:00 150 and 48. Total 846.">
+      {% for time, sample, decoy in [('00:00',35,10),('04:00',20,8),('08:00',95,30),('12:00',140,50),('16:00',180,80),('20:00',150,48)] %}<div class="bar-group"><div class="bars"><span class="bar sample" style="--height: {{ sample / 2 }}%"></span><span class="bar decoy" style="--height: {{ decoy / 2 }}%"></span></div><span>{{ time }}</span></div>{% endfor %}
+    </div><p class="chart-note">09 Nov 2026 · UTC · Static illustration, no live feed</p>
+  </section>
+  <section class="card severity-card" id="severity"><div class="section-heading"><div><h2>Alert severity</h2><p class="muted">Illustrative distribution only</p></div>{{ badge('Demo') }}</div><div class="severity-total"><strong>12</strong><span>fictional alerts</span></div>
+    {% for label, count, tone, width in [('High',3,'high',25),('Medium',5,'medium',42),('Low',4,'low',33)] %}<div class="severity-row"><div>{{ badge(label, tone) }}<span>{{ count }} alerts</span></div><div class="severity-track"><span class="fill-{{ tone }}" style="--width: {{ width }}%"></span></div></div>{% endfor %}
+    <p class="chart-note">Severity is preassigned demo content. No rules are running.</p>
+  </section>
+</div>
+<section class="card events-card" id="events"><div class="section-heading"><div><h2>Recent events</h2><p class="muted">A small selection of fictional document interactions</p></div>{{ badge('4 demo events') }}</div>{{ event_table(events) }}<div class="table-footer">Showing 4 illustrative events <span>No audit records are collected</span></div></section>
+{% endblock %}

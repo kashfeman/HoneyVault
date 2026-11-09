@@ -1,0 +1,12 @@
+{% from 'components/ui.html' import brand %}
+<aside class="sidebar" id="sidebar" aria-label="Dashboard sidebar">
+  {{ brand() }}
+  <p class="nav-label">WORKSPACE PREVIEW</p>
+  <nav aria-label="Dashboard navigation">
+    <a class="nav-link active" href="{{ url_for('dashboard') }}" aria-current="page"><span aria-hidden="true">▦</span> Overview</a>
+    <a class="nav-link" href="#activity"><span aria-hidden="true">▤</span> Document activity</a>
+    <a class="nav-link" href="#severity"><span aria-hidden="true">◇</span> Alert severity</a>
+    <a class="nav-link" href="#events"><span aria-hidden="true">≡</span> Recent events</a>
+  </nav>
+  <div class="sidebar-bottom"><div class="sandbox"><span class="status-dot" aria-hidden="true"></span> Local demo workspace<p>No live monitoring connected</p></div><a class="nav-link" href="{{ url_for('login') }}">← Login UI preview</a></div>
+</aside>

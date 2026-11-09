@@ -1,76 +1,80 @@
-# HoneyVault
-HoneyVault: Intelligent Fake Data to Catch Insider Threats 
+﻿# HoneyVault
 
-HoneyVault is a university Information Security project demonstrating how synthetic
-decoy documents can help identify suspicious activity by simulated employees.
-The development target is 10–14 days using Python 3.12, Flask, SQLite, HTML5,
-CSS3, and vanilla JavaScript.
+**Intelligent Fake Data to Catch Insider Threats**
 
-## Current milestone
+A university Information Security demonstration using synthetic decoy documents.
+Stack: Python 3.12, Flask, Jinja2, HTML5, CSS3, vanilla JavaScript; SQLite later.
 
-Milestone 1 provides the package structure and development documentation only.
-There is no runnable application, database schema, authentication, frontend,
-document generator, or detection engine yet. No dependencies are required for
-this milestone.
+## Milestone 2: Frontend foundation
 
-## Planned capabilities
+Includes a login UI, administrator dashboard, navy/cyan design system, reusable
+layouts and components, responsive navigation, activity chart, severity indicators,
+and recent-events table. All identities, documents, metrics, events and dates are
+fixed fictional demo content, not live information.
 
-- Admin and simulated employee accounts with server-side role authorization.
-- Synthetic salary sheets, customer lists, and internal reports in CSV and TXT,
-  alongside benign demonstration documents.
-- Controlled server-side document preview and download.
-- UTC audit events for access requests, outcomes, and authorization denials.
-- Deterministic severity rules based on document identity, action, and repeated
-  activity, with explanations for alerts.
-- An admin dashboard for documents, events, alerts, filters, and investigation.
-- Repeatable demo reset and security evaluation scenarios.
+**The preview is public and unprotected.** There is no authentication, session,
+role enforcement, database, persistent data, download, audit collection or threat
+detection. Optional login values are discarded; fields have no submission names.
+Do not enter real credentials. Direct dashboard access requires no login.
 
-All data will be synthetic. The project excludes spyware, macros, hidden
-trackers, and external monitoring. Detection will use explainable rules rather
-than a trained machine-learning model.
+## Exact local preview commands (PowerShell)
 
-## Repository layout
+Run from the repository root with Python 3.12:
 
-```text
-app/
-  __init__.py
-  auth/                # Authentication and authorization
-  documents/           # Document handling and synthetic decoy generation
-  audit/               # Structured security events
-  detection/           # Correlation rules and alerts
-  dashboard/           # Administrator views
-  templates/
-    layouts/           # Shared template layouts
-  static/
-    css/
-    js/
-    images/
-tests/
-scripts/
-docs/
-  ARCHITECTURE.md
-.env.example
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe scripts/preview_frontend.py
 ```
 
-Python packages contain only package markers. Empty resource directories use
-`.gitkeep` placeholders so Git retains the structure.
+Skip environment creation if `.venv` already exists. No activation, `.env`, secret,
+database setup or seeding is needed. Open http://127.0.0.1:5000/login or
+http://127.0.0.1:5000/dashboard. Stop with Ctrl+C. The runner binds only to
+127.0.0.1:5000 with debugging disabled; it is a development preview server.
 
-## Planned local setup
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
 
-1. Use Python 3.12 and create a local environment with `python -m venv .venv`
-   if one does not already exist. On PowerShell, activate it with
-   `.\.venv\Scripts\Activate.ps1`.
-2. Copy `.env.example` to `.env` and replace the secret placeholder with a unique
-   local value before authentication is implemented. Never commit that value.
-3. In a later milestone, install dependencies from the dependency manifest
-   added with the application implementation, then follow its database setup,
-   demo seed/reset, and startup instructions.
+Smoke tests cover page rendering, local assets, demo disclosures, public dashboard
+access, table semantics, redirect behavior and exclusion of login inputs from
+submission. Browser checks remain manual: inspect at 375px, 768px and 1440px;
+tab through controls; use the skip link; open/close the mobile menu with
+Enter/Escape; toggle password visibility; scroll the table; and verify navigation
+and dashboard access with JavaScript disabled.
 
-Environment loading and configuration validation are planned, not implemented.
-There is currently no install, database initialization, or startup command.
-Keep runtime databases and private document storage under ignored `instance/`;
-keep generated demo artifacts under ignored `generated/`. The existing ignore
-rules also exclude virtual environments, local environment files, and logs.
+## Modular structure
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module boundaries, security
-assumptions, and guidance for subsequent milestones.
+- `app/__init__.py`: reserved for the future production application factory.
+- `app/auth/`, `documents/`, `audit/`, `detection/`, `dashboard/`: existing backend
+  package boundaries, reserved for later milestones.
+- `app/templates/layouts/`: base HTML document and dashboard shell.
+- `app/templates/components/`: sidebar, brand, headers, badges, demo notice,
+  metrics and event-table macros.
+- `app/templates/auth/login.html`: optional-input login UI preview.
+- `app/templates/dashboard/index.html`: static synthetic dashboard.
+- `app/static/css/main.css`: design tokens, components, responsive styles.
+- `app/static/js/main.js`: menu and password visibility enhancements.
+- `scripts/preview_frontend.py`: isolated preview factory, routes and fixtures.
+- `tests/test_preview_frontend.py`: focused standard-library smoke tests.
+- `docs/ARCHITECTURE.md`: architecture and future security assumptions.
+- `requirements.txt`: Flask dependency.
+
+All frontend assets and fonts are local/system resources, with no CDN, framework,
+paid dependency or external request. Semantic landmarks, labels, textual severity,
+visible focus outlines, skip navigation and a text alternative for the chart are
+included. Navigation stays visible without JavaScript.
+
+## Future backend integration
+
+Preview routes and fixtures are separate from production packages. Future Flask
+blueprints can reuse templates and supply view models after implementing real
+security controls. Keep business rules and authorization out of templates. Jinja
+autoescaping handles dynamic content. Private documents and SQLite belong under
+ignored `instance/`; generated demo artifacts belong under ignored `generated/`.
+Never put private documents in public static assets.
+
+Planned capabilities include synthetic document generation, controlled previews
+and downloads, UTC audit events, role checks, and deterministic explained alerts.
+No real employee records, secrets, spyware, macros, hidden tracking or external
+monitoring belong in this project. See [architecture](docs/ARCHITECTURE.md).

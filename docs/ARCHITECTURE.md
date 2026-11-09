@@ -2,7 +2,8 @@
 
 ## Scope and status
 
-Milestone 1 establishes structure only. All behavior described below is planned.
+Milestone 2 supplies a frontend foundation and an isolated local Flask preview.
+Backend behavior described below remains planned.
 Build a small Flask application backed by SQLite for a controlled university
 demonstration within 10–14 days. Avoid distributed services, background workers,
 and machine-learning infrastructure unless a demonstrated need arises.
@@ -89,5 +90,24 @@ control, and keep unrelated files and Git history intact.
 - Rule thresholds, time windows, severity levels, and alert deduplication.
 - Demo reset scope and safeguards against resetting unintended data.
 
-No routes, models, configuration loader, frontend pages, or engine are supplied
-in this milestone.
+## Milestone 2 preview boundary
+
+`scripts/preview_frontend.py` owns a separate preview factory with GET routes
+for `/`, `/login`, and `/dashboard`. The runner binds to `127.0.0.1:5000` with
+debugging disabled. Production feature packages and `app/__init__.py` remain
+reserved for later backend integration.
+
+Shared templates live under `app/templates/layouts` and `components`; feature
+templates live under `auth` and `dashboard`. Local CSS supplies design tokens,
+responsive layouts and focus indicators. Vanilla JavaScript enhances the mobile
+menu and optional password visibility. Navigation remains visible without
+JavaScript. Login inputs have no names and are never submitted.
+
+The dashboard receives fixed fictional event fixtures from the preview runner.
+Metrics, chart values, dates and severities are static illustrations. There are
+no sessions, database operations, downloads, role checks, audit writes, detection
+rules or background requests. Page access signifies no authorization. Future
+backend routes must implement security before connecting real view models.
+Preview smoke tests are rendering checks, not security tests.
+
+Exact setup, preview, test commands and manual browser checks are in README.md.
