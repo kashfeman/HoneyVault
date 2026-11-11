@@ -14,10 +14,10 @@
 <header class="page-heading"><p class="eyebrow">{{ eyebrow }}</p><h1>{{ title }}</h1><p class="muted">{{ description }}</p></header>
 {%- endmacro %}
 
-{% macro metric(label, value, detail, tone='cyan') -%}
-<article class="card metric"><div class="metric-top"><h2>{{ label }}</h2><span class="metric-dot {{ tone }}" aria-hidden="true"></span></div><p class="metric-value">{{ value }}</p><p class="muted">{{ detail }}</p><small class="demo-label">SYNTHETIC DEMO</small></article>
+{% macro metric(label, value, detail, tone='cyan', href=none) -%}
+<article class="card metric"><div class="metric-top"><h2>{% if href %}<a class="metric-link" href="{{ href }}">{{ label }} ↗</a>{% else %}{{ label }}{% endif %}</h2><span class="metric-dot {{ tone }}" aria-hidden="true"></span></div><p class="metric-value">{{ value }}</p><p class="muted">{{ detail }}</p><small class="demo-label">SYNTHETIC DEMO</small></article>
 {%- endmacro %}
 
 {% macro event_table(events) -%}
-<div class="table-scroll" role="region" aria-label="Recent demo events, scroll horizontally on small screens" tabindex="0"><table><caption class="sr-only">Fictional recent events on 09 November 2026; all times UTC</caption><thead><tr><th scope="col">Event / time</th><th scope="col">Demo actor</th><th scope="col">Activity</th><th scope="col">Document</th><th scope="col">Severity</th></tr></thead><tbody>{% for event in events %}<tr><th scope="row">{{ event.id }}<small>{{ event.time }}</small></th><td>{{ event.actor }}</td><td>{{ event.action }}</td><td>{{ event.document }}</td><td>{{ badge(event.severity|capitalize, event.severity) }}</td></tr>{% endfor %}</tbody></table></div>
+<div class="table-scroll" role="region" aria-label="Recent demo events, scroll horizontally on small screens" tabindex="0"><table><caption class="sr-only">Fictional recent events on 09 November 2026; all times UTC</caption><thead><tr><th scope="col">Event / time</th><th scope="col">Demo actor</th><th scope="col">Activity</th><th scope="col">Document</th><th scope="col">Severity</th></tr></thead><tbody>{% for event in events %}<tr><th scope="row"><a href="/dashboard/events/{{ event.id }}">{{ event.id }}</a><small>{{ event.time }}</small></th><td>{{ event.actor }}</td><td>{{ event.action }}</td><td>{{ event.document }}</td><td>{{ badge(event.severity|capitalize, event.severity) }}</td></tr>{% endfor %}</tbody></table></div>
 {%- endmacro %}

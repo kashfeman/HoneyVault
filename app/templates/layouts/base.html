@@ -9,6 +9,7 @@
   <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/documents.css') }}">
   <script src="{{ url_for('static', filename='js/documents.js') }}" defer></script>
+  {% block page_assets %}{% endblock %}
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>

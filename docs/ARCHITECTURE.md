@@ -2,7 +2,7 @@
 
 ## Scope and status
 
-Milestone 2 supplies a frontend foundation and an isolated local Flask preview.
+Milestones 2–4 supply frontend workspaces and an isolated local Flask preview.
 Backend behavior described below remains planned.
 Build a small Flask application backed by SQLite for a controlled university
 demonstration within 10–14 days. Avoid distributed services, background workers,
@@ -135,3 +135,38 @@ disabled and explicitly pending backend integration. No monitoring or audit
 events are produced. Unknown document IDs return a recoverable 404, not an access
 decision. New focused tests cover rendering, filter behavior, escaping, missing
 references, classification-free responses and the view switch.
+
+## Milestone 4 administrator presentation
+
+`scripts/admin_preview.py` adds a read-only preview Blueprint under `/dashboard`
+for `manage-documents`, `alerts` and `events`, including record-detail routes.
+Existing preview routes and production package markers are preserved. This
+Blueprint is a public UI demonstration, not an administrator authorization layer.
+
+`scripts/admin_demo_data.py` is the authoritative administrator fixture source.
+It enriches copies of public document records with filename, classification,
+sensitivity, creation date and status. Public fixtures remain unchanged; employee
+templates are never passed enriched records. Administrator assets are scoped to
+the administrator layout. This avoids metadata leaks through employee markup,
+attributes, scripts or embedded JSON without pretending to enforce server access.
+
+Alert and event fixtures reference stable document IDs. Each authored alert links
+to supporting events; linked events point back to the same alert and rule. Each
+request/response pair shares a correlation ID. UTC timestamps are deterministic.
+The overview derives counts and chart bins from this same source; request and
+response events are counted separately, not as unique document interactions.
+There is no rule engine or audit writer. Denials are illustrative content only.
+
+Presentation filters select in-memory records using GET parameters. UTC date/time
+bounds are validated and inclusive to minute precision; invalid ranges produce
+visible errors. Inventory cards replace its wide table on smaller screens; event
+and alert tables retain semantic headers and labeled horizontal scroll regions.
+Detail pages include chronological supporting-event timelines and recovery links.
+
+Native dialogs demonstrate required fields, validation, cancellation and a text
+confirmation without file generation or record changes. Review toggles affect only
+the current DOM and reset on reload/navigation. Snapshot filters are unaffected
+by temporary review changes. No browser/server persistence is used. Audit history
+has no edit/delete controls. Future production work must separately implement
+authentication, roles, CSRF controls, storage, secure file handling, rule evaluation
+and audit integrity before connecting these views to backend services.

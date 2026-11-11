@@ -1,0 +1,43 @@
+/* Administrator-only extensions of the shared navy/cyan design system. */
+.admin-context { margin: -8px 0 24px; color: var(--muted); font-size: .82rem; max-width: 950px; }
+.admin-metadata { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 24px; margin: 0 0 24px; font-size: .8rem; }
+.admin-metadata dt { color: var(--muted); margin-bottom: 6px; }
+.admin-metadata dd { margin: 0; overflow-wrap: anywhere; }
+.inventory-cards { display: none; }
+.inventory-table th, .inventory-table td { padding: 16px; }
+.block-muted { display: block; margin-top: 4px; color: var(--muted); font-size: .7rem; }
+.admin-filters input[type="datetime-local"] { width: 100%; min-width: 0; }
+.admin-filters > div { min-width: 150px; flex: 1 1 160px; }
+.admin-filters .search-field { flex-basis: 270px; }
+.admin-filters { margin-top: 24px; }
+.admin-dialog { color: var(--text); background: var(--surface); border: 1px solid #426274; border-radius: var(--radius); padding: 28px; width: min(560px, calc(100% - 32px)); max-height: calc(100dvh - 40px); overflow-y: auto; }
+.admin-dialog::backdrop { background: #030b19cc; }
+.admin-dialog .section-heading { margin-bottom: 16px; align-items: center; }
+.admin-dialog select { display: block; width: 100%; min-height: 48px; padding: 10px 12px; background: var(--bg); color: var(--text); border: 1px solid #42546c; border-radius: 8px; font: inherit; }
+.admin-dialog .form-hint { margin-bottom: 16px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+.simulation-result { margin-top: 24px; }
+.detail-explanation { color: #cee0f1; margin: 12px 0; max-width: 850px; }
+[data-alert-row] > .button { margin-top: 20px; }
+.timeline-card { margin-top: 24px; }
+.activity-timeline { padding: 0 0 0 24px; list-style: none; margin: 24px 0 0; border-left: 1px solid #45617c; }
+.activity-timeline li { position: relative; padding: 0 0 28px 6px; }
+.activity-timeline li:last-child { padding-bottom: 0; }
+.activity-timeline li::before { content: ""; position: absolute; left: -29px; top: 8px; width: 8px; height: 8px; background: var(--cyan); border-radius: 50%; }
+.activity-timeline time { color: var(--muted); font-size: .75rem; }
+.activity-timeline h3 { font-size: .9rem; font-weight: 500; margin: 6px 0; }
+.activity-timeline p { font-size: .8rem; color: var(--muted); }
+.metric-link:hover, .severity-card h2 a:hover { color: var(--cyan); text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 1200px) {
+  .inventory-table { display: none; }
+  .inventory-cards { display: grid; }
+  .inventory-cards .admin-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 20px; }
+  .inventory-cards .section-heading h2 { overflow-wrap: anywhere; }
+}
+@media (max-width: 640px) {
+  .admin-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .admin-dialog { padding: 20px; }
+  .admin-dialog h2 { font-size: 1rem; }
+  .admin-filters > div { flex-basis: 100%; }
+  .admin-context { margin-top: 0; }
+}
