@@ -1,0 +1,36 @@
+{% from 'components/ui.html' import badge %}
+{% macro filters_form(endpoint, query, choices, filters, dates=false) %}
+<form class="card library-filters admin-filters" action="{{ url_for(endpoint) }}" method="get" role="search" aria-label="Filter demo records">
+  <div class="search-field"><label for="record-search">Search demo records</label><input id="record-search" name="q" type="search" value="{{ query }}" maxlength="120" placeholder="Search ID, document or fictional actor"></div>
+  {% for key, values in choices.items() %}<div><label for="filter-{{ key }}">{{ key|capitalize }}</label><select id="filter-{{ key }}" name="{{ key }}"><option value="">All {{ key }} values</option>{% for value in values %}<option {% if filters[key] == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></div>{% endfor %}
+  {% if dates %}{% for key, label in [('start', 'From (UTC)'), ('end', 'Through (UTC)')] %}<div><label for="filter-{{ key }}">{{ label }}</label><input id="filter-{{ key }}" type="datetime-local" name="{{ key }}" value="{{ request.args.get(key, '') }}" step="60"></div>{% endfor %}{% endif %}
+  <button class="button button-primary" type="submit">Apply filters</button><a class="inline-link" href="{{ url_for(endpoint) }}">Clear filters</a>
+</form>
+{% endmacro %}
+
+{% macro empty(endpoint, noun='records') %}
+<section class="card empty-state"><h2>No {{ noun }} found</h2><p class="muted">Try a shorter search or broaden the filters.</p><a class="button" href="{{ url_for(endpoint) }}">Clear filters</a></section>
+{% endmacro %}
+
+{% macro document_metadata(document) %}
+<dl class="admin-metadata">
+{% for label, value in [('Filename',document.filename), ('Reference',document.id), ('Category',document.category), ('Type',document.format), ('Classification',document.classification), ('Sensitivity',document.sensitivity), ('Created',document.created), ('Status',document.status)] %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+</dl>
+{% endmacro %}
+
+{% macro simulation_dialog(categories, document=none) %}
+<dialog id="document-dialog" class="admin-dialog" aria-labelledby="dialog-title" aria-describedby="dialog-description">
+<form method="dialog" id="document-simulation">
+  <div class="section-heading"><h2 id="dialog-title">{{ 'Manage document' if document else 'Create decoy' }} · Simulation</h2><button class="button" type="button" data-close-dialog aria-label="Close document dialog">Close</button></div>
+  <p id="dialog-description" class="muted">Frontend-only form. No file is generated and no record changes. All choices reset when this dialog closes.</p>
+  <label for="simulation-name">Display name</label><input id="simulation-name" name="title" required minlength="3" maxlength="80" value="{{ document.title if document else '' }}" placeholder="Fictional planning summary" autofocus>
+  <label for="simulation-category">Category</label><select id="simulation-category" name="category" required><option value="">Choose a category</option>{% for category in categories %}<option {% if document and document.category == category %}selected{% endif %}>{{ category }}</option>{% endfor %}</select>
+  <label for="simulation-format">Format</label><select id="simulation-format" name="format" required><option value="">Choose a format</option>{% for format in ['CSV','TXT'] %}<option {% if document and document.format == format %}selected{% endif %}>{{ format }}</option>{% endfor %}</select>
+  <label for="simulation-sensitivity">Sensitivity</label><select id="simulation-sensitivity" name="sensitivity" required><option value="">Choose a sensitivity</option>{% for sensitivity in ['General','Internal','Confidential','Restricted'] %}<option {% if document and document.sensitivity == sensitivity %}selected{% endif %}>{{ sensitivity }}</option>{% endfor %}</select>
+  {% if document %}<label for="simulation-status">Status</label><select id="simulation-status" name="status"><option {% if document.status == 'Active' %}selected{% endif %}>Active</option><option {% if document.status == 'Draft' %}selected{% endif %}>Draft</option></select>{% endif %}
+  <p class="form-hint">Required: name (3–80 non-blank characters), category, format and sensitivity. Use fictional text only.</p>
+  <div class="dialog-actions"><button class="button" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Simulate {{ 'changes' if document else 'creation' }}</button></div>
+</form>
+</dialog>
+<p id="simulation-result" class="notice simulation-result" role="status" tabindex="-1" hidden></p>
+{% endmacro %}

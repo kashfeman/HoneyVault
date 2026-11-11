@@ -1,0 +1,23 @@
+{% extends layout %}
+{% from 'components/ui.html' import heading, notice, badge %}
+{% from 'components/documents.html' import document_cards %}
+{% block title %}Document library{% endblock %}
+{% block content %}
+{{ heading('WORKSPACE RESOURCES', 'Document library', 'Browse fictional business documents, from everyday guides to planning resources.') }}
+<div class="library-disclosure">{{ notice() }}</div>
+<form class="card library-filters" method="get" action="{{ '/dashboard' if admin else '/employee' }}/documents" role="search" aria-label="Search demo documents">
+  <div class="search-field"><label for="document-search">Search documents</label><input id="document-search" type="search" name="q" value="{{ query }}" maxlength="120" placeholder="Search title, description or team"></div>
+  <div><label for="category">Category</label><select id="category" name="category"><option value="">All categories</option>{% for item in categories %}<option {% if category == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></div>
+  <div><label for="sort">Sort by</label><select id="sort" name="sort">{% for value, label in sorts.items() %}<option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <button class="button button-primary" type="submit">Apply</button>
+  <a class="inline-link" href="{{ '/dashboard' if admin else '/employee' }}/documents">Reset filters</a>
+</form>
+<div class="library-results-bar"><p id="result-count" role="status">{{ documents|length }} of {{ total }} demo documents</p><div class="view-controls" role="group" aria-label="Document view" hidden><button class="button" type="button" data-view="cards" aria-controls="document-cards" aria-pressed="true">Cards</button><button class="button" type="button" data-view="table" aria-controls="document-table" aria-pressed="false">Table</button></div></div>
+{% if documents %}
+<div id="document-cards">{{ document_cards(documents, admin) }}</div>
+<div id="document-table" class="card events-card" hidden><div class="table-scroll" role="region" aria-label="Document library table" tabindex="0"><table><caption class="sr-only">Fictional demo documents matching your filters</caption><thead><tr><th scope="col">Document</th><th scope="col">Category</th><th scope="col">Format</th><th scope="col">Owner</th><th scope="col">Updated</th></tr></thead><tbody>{% for document in documents %}<tr><th scope="row"><a class="inline-link" href="{{ '/dashboard' if admin else '/employee' }}/documents/{{ document.id }}">{{ document.title }}</a></th><td>{{ document.category }}</td><td>{{ badge(document.format) }}</td><td>{{ document.owner }}</td><td>{{ document.updated }}</td></tr>{% endfor %}</tbody></table></div></div>
+{% else %}
+<section class="card empty-state"><span class="file-symbol" aria-hidden="true">⌕</span><h2>No documents found</h2><p class="muted">Try a shorter search or choose a different category.</p><a class="button" href="{{ '/dashboard' if admin else '/employee' }}/documents">Clear filters</a></section>
+{% endif %}
+<p class="library-footnote">All documents are synthetic. Downloads are unavailable; backend integration is pending.</p>
+{% endblock %}

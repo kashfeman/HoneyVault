@@ -1,0 +1,29 @@
+{% extends 'layouts/dashboard.html' %}
+{% from 'components/ui.html' import heading, notice, badge, metric %}
+{% from 'admin/components.html' import filters_form, empty with context %}
+{% set is_alert = kind == 'alerts' %}
+{% set endpoint = 'admin_preview.alerts' if is_alert else 'admin_preview.events' %}
+{% block title %}{{ 'Security alerts' if is_alert else 'Security event history' }}{% endblock %}
+{% block content %}
+<div class="heading-row">{{ heading('ADMINISTRATOR PREVIEW', 'Security alerts' if is_alert else 'Security event history', 'Review authored scenarios and their explanations.' if is_alert else 'Follow illustrative requests and responses in a fixed UTC snapshot.') }}<span class="date-label">09 Nov 2026<span>Fixed demo snapshot · UTC</span></span></div>
+{{ notice() }}
+<p class="admin-context">{% if is_alert %}Alerts illustrate potentially suspicious interactions; they do not prove malicious intent. No rules are evaluated. Review changes are temporary and reset on refresh or navigation.{% else %}Illustrative audit events, not real server logs. Requested, successful and denied outcomes are authored examples, not actual access decisions. Records have no edit or delete controls.{% endif %}</p>
+{% if is_alert %}<section class="metrics" aria-label="Full demo alert snapshot, unaffected by filters">{% for severity, count in counts.items() %}{{ metric(severity + ' alerts', count, 'Full demo snapshot', 'amber' if severity == 'High' else 'blue', url_for(endpoint, severity=severity)) }}{% endfor %}<article class="card metric"><h2>Reviewed alerts</h2><p class="metric-value" id="reviewed-total" data-baseline="{{ reviewed }}">{{ reviewed }}</p><p class="muted">Full snapshot · Temporary changes only</p><small class="demo-label">SYNTHETIC DEMO</small></article></section>{% endif %}
+{{ filters_form(endpoint, query, choices, filters, dates=true) }}
+{% for error in errors %}<p class="notice" role="alert">{{ error }}</p>{% endfor %}
+<div class="library-results-bar"><p>{{ records|length }} matching demo {{ kind }}</p>{% if is_alert %}<span>Filters use fixed snapshot status</span>{% endif %}</div>
+{% if records %}<div class="card events-card"><div class="table-scroll" role="region" aria-label="{{ 'Alert' if is_alert else 'Event' }} history table" tabindex="0"><table><caption class="sr-only">Fictional {{ kind }}; timestamps in UTC</caption><thead><tr>{% for label in (['Alert / UTC time','Severity','Document','Fictional actor','Triggering rule / action','Review status','Review'] if is_alert else ['Event / UTC time','Fictional actor','Document / ID','Action','Outcome','Rule','Linked alert']) %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>
+{% for record in records %}
+<tr {% if is_alert %}data-alert-row="{{ record.id }}"{% endif %}>
+<th scope="row"><a class="inline-link" href="{{ url_for('admin_preview.alert_detail', alert_id=record.id) if is_alert else url_for('admin_preview.event_detail', event_id=record.id) }}">{{ record.id }}</a><small><time datetime="{{ record.timestamp }}">{{ record.timestamp|replace('T',' ')|replace('Z',' UTC') }}</time></small></th>
+{% if is_alert %}<td>{{ badge(record.severity, record.severity|lower) }}</td>{% endif %}
+{% if is_alert %}<td><a href="{{ url_for('admin_preview.document_detail', document_id=record.document_id) }}">{{ documents[record.document_id].title }}</a></td>{% endif %}
+<td>{{ record.actor }}</td>
+{% if not is_alert %}<td><a href="{{ url_for('admin_preview.document_detail', document_id=record.document_id) }}">{{ documents[record.document_id].title }}</a><small class="block-muted">{{ record.document_id }}</small></td>{% endif %}
+{% if is_alert %}<td>{{ record.rule }}<small class="block-muted">{{ record.action }}</small></td><td><span data-review-status>{{ record.status }}</span></td><td>{% if record.status != 'Reviewed' %}<button class="button" type="button" data-review="{{ record.id }}" aria-label="Mark {{ record.id }} reviewed temporarily" hidden>Mark reviewed · Demo</button>{% else %}Reviewed in snapshot{% endif %}</td>
+{% else %}<td>{{ record.action }}</td><td>{{ badge(record.outcome, 'high' if record.outcome == 'Denied' else 'low' if record.outcome == 'Success' else 'neutral') }}</td><td>{{ record.rule }}</td><td>{% if record.alert_id %}<a class="inline-link" href="{{ url_for('admin_preview.alert_detail', alert_id=record.alert_id) }}">{{ record.alert_id }}</a>{% else %}No alert{% endif %}</td>{% endif %}
+</tr>{% endfor %}
+</tbody></table></div></div>
+{% else %}{{ empty(endpoint, kind) }}{% endif %}
+{% if is_alert %}<p id="review-feedback" class="library-footnote" role="status">Review status is a UI simulation. Refresh or navigate to restore the fixed snapshot.</p><noscript><p class="notice">Review simulation requires JavaScript. All details remain readable.</p></noscript>{% endif %}
+{% endblock %}

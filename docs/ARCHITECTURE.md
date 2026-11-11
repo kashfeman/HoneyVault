@@ -2,7 +2,8 @@
 
 ## Scope and status
 
-Milestone 1 establishes structure only. All behavior described below is planned.
+Milestones 2–5 supply frontend workspaces and an isolated local Flask preview.
+Backend behavior described below remains planned.
 Build a small Flask application backed by SQLite for a controlled university
 demonstration within 10–14 days. Avoid distributed services, background workers,
 and machine-learning infrastructure unless a demonstrated need arises.
@@ -89,5 +90,106 @@ control, and keep unrelated files and Git history intact.
 - Rule thresholds, time windows, severity levels, and alert deduplication.
 - Demo reset scope and safeguards against resetting unintended data.
 
-No routes, models, configuration loader, frontend pages, or engine are supplied
-in this milestone.
+## Milestone 2 preview boundary
+
+`scripts/preview_frontend.py` owns a separate preview factory with GET routes
+for `/`, `/login`, and `/dashboard`. The runner binds to `127.0.0.1:5000` with
+debugging disabled. Production feature packages and `app/__init__.py` remain
+reserved for later backend integration.
+
+Shared templates live under `app/templates/layouts` and `components`; feature
+templates live under `auth` and `dashboard`. Local CSS supplies design tokens,
+responsive layouts and focus indicators. Vanilla JavaScript enhances the mobile
+menu and optional password visibility. Navigation remains visible without
+JavaScript. Login inputs have no names and are never submitted.
+
+The dashboard receives fixed fictional event fixtures from the preview runner.
+Metrics, chart values, dates and severities are static illustrations. There are
+no sessions, database operations, downloads, role checks, audit writes, detection
+rules or background requests. Page access signifies no authorization. Future
+backend routes must implement security before connecting real view models.
+Preview smoke tests are rendering checks, not security tests.
+
+Exact setup, preview, test commands and manual browser checks are in README.md.
+
+## Employee and document presentation extension
+
+The same isolated preview runner now serves `/employee`, `/employee/documents`,
+and `/employee/documents/<document_id>`, plus corresponding document routes under
+`/dashboard/documents`. Employee templates use their own layout and navigation;
+administrator document pages reuse the existing administrator shell. Neither
+layout enforces a role. Existing login and overview routes retain their behavior.
+
+`scripts/frontend_data.py` owns all public document presentation records. The
+records intentionally have no decoy classification, sensitivity or policy fields.
+No such metadata is serialized into employee HTML, attributes, JSON or scripts.
+The examples are fictional guides, schedules, budgets and planning text; they
+are not private files. A future security inventory must remain separate from
+employee-facing view models and enforce access through production blueprints.
+
+GET search/category/sort parameters filter these in-memory fixtures only.
+Templates render cards, a table alternative and escaped CSV/TXT preview text.
+The small local `documents.js` toggles views without persistence or network calls.
+No loading simulation is needed for synchronous rendering. Downloads remain
+disabled and explicitly pending backend integration. No monitoring or audit
+events are produced. Unknown document IDs return a recoverable 404, not an access
+decision. New focused tests cover rendering, filter behavior, escaping, missing
+references, classification-free responses and the view switch.
+
+## Milestone 4 administrator presentation
+
+`scripts/admin_preview.py` adds a read-only preview Blueprint under `/dashboard`
+for `manage-documents`, `alerts` and `events`, including record-detail routes.
+Existing preview routes and production package markers are preserved. This
+Blueprint is a public UI demonstration, not an administrator authorization layer.
+
+`scripts/admin_demo_data.py` is the authoritative administrator fixture source.
+It enriches copies of public document records with filename, classification,
+sensitivity, creation date and status. Public fixtures remain unchanged; employee
+templates are never passed enriched records. Administrator assets are scoped to
+the administrator layout. This avoids metadata leaks through employee markup,
+attributes, scripts or embedded JSON without pretending to enforce server access.
+
+Alert and event fixtures reference stable document IDs. Each authored alert links
+to supporting events; linked events point back to the same alert and rule. Each
+request/response pair shares a correlation ID. UTC timestamps are deterministic.
+The overview derives counts and chart bins from this same source; request and
+response events are counted separately, not as unique document interactions.
+There is no rule engine or audit writer. Denials are illustrative content only.
+
+Presentation filters select in-memory records using GET parameters. UTC date/time
+bounds are validated and inclusive to minute precision; invalid ranges produce
+visible errors. Inventory cards replace its wide table on smaller screens; event
+and alert tables retain semantic headers and labeled horizontal scroll regions.
+Detail pages include chronological supporting-event timelines and recovery links.
+
+Native dialogs demonstrate required fields, validation, cancellation and a text
+confirmation without file generation or record changes. Review toggles affect only
+the current DOM and reset on reload/navigation. Snapshot filters are unaffected
+by temporary review changes. No browser/server persistence is used. Audit history
+has no edit/delete controls. Future production work must separately implement
+authentication, roles, CSRF controls, storage, secure file handling, rule evaluation
+and audit integrity before connecting these views to backend services.
+
+## Milestone 5 presentation quality
+
+Recent dashboard events sort by timestamp, independent of fixture tuple order.
+The existing shared snapshot still drives document/event/alert counts. Public
+records remain free of administrator classifications and sensitivity fields.
+
+The app-level 404 handler selects the current workspace layout and a safe home
+link, without showing the requested path or internal exception details. It does
+not change existing record-specific recovery routes or imply authorization.
+The stale-process/occupied-port guard and local-only startup behavior are retained.
+
+Mobile disclosure navigation manages keyboard focus; dialogs explicitly wrap
+Tab/Shift+Tab and use native modal/cancel behavior. Temporary review state resets
+on persisted `pageshow` as well as normal reloads. All state remains in the current
+DOM; there are no browser storage or backend writes. Audit records stay read-only.
+
+Optional `tests/browser_frontend.cjs` drives an installed headless Edge via its
+loopback debugging interface using Node's built-in WebSocket/fetch APIs. It checks
+responsive layout and actual native-browser interactions without third-party
+packages. Temporary profiles are isolated and removed, and optional small
+screenshots stay under ignored `generated/`. Unit tests remain lightweight;
+assistive-technology and cross-engine validation remain manual.

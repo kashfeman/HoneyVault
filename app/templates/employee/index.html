@@ -1,0 +1,15 @@
+{% extends 'layouts/employee.html' %}
+{% from 'components/ui.html' import heading, notice, metric %}
+{% from 'components/documents.html' import document_cards %}
+{% block title %}Employee workspace{% endblock %}
+{% block content %}
+<div class="heading-row">{{ heading('YOUR DEMO WORKSPACE', 'Welcome, demo teammate.', 'Find the resources you need for a productive day.') }}<a class="button button-primary" href="/employee/documents">Browse documents →</a></div>
+{{ notice() }}
+<section class="metrics employee-metrics" aria-label="Library summary">
+{{ metric('Library documents', total, 'Fictional business resources') }}
+{{ metric('Categories', categories|length, 'People, finance, planning and operations', 'blue') }}
+{{ metric('Document formats', '2', 'CSV tables and plain text', 'purple') }}
+</section>
+<section class="card employee-welcome"><div><p class="eyebrow">EVERYTHING IN ONE PLACE</p><h2>Your team's resource shelf</h2><p class="muted">Browse sample working guides, schedules and planning documents. Every preview uses fictional content and opens without an account.</p></div><a class="button" href="/employee/documents?category=People">Explore people resources →</a></section>
+<section aria-labelledby="recent-title"><div class="section-heading library-section-title"><div><h2 id="recent-title">Recently updated</h2><p class="muted">Fixed demo snapshot · November 2026</p></div><a class="inline-link" href="/employee/documents">View all documents →</a></div>{{ document_cards(documents) }}</section>
+{% endblock %}

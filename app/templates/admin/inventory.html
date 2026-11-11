@@ -1,0 +1,19 @@
+{% extends 'layouts/dashboard.html' %}
+{% from 'components/ui.html' import heading, notice, badge %}
+{% from 'admin/components.html' import filters_form, empty, document_metadata, simulation_dialog with context %}
+{% block title %}Document management{% endblock %}
+{% block content %}
+<div class="heading-row">{{ heading('ADMINISTRATOR PREVIEW', 'Document management', 'Inspect a fictional inventory and explore simulated management controls.') }}<button class="button button-primary" type="button" data-open-dialog hidden>Create decoy · Demo</button></div>
+{{ notice() }}
+<p class="admin-context">Classification and sensitivity are administrator presentation labels, not enforced policies. No files are generated or changed.</p>
+<noscript><p class="notice">Management simulations require JavaScript. Inventory, filtering and previews remain available.</p></noscript>
+{{ filters_form('admin_preview.inventory', query, choices, filters) }}
+<p class="library-results-bar">{{ records|length }} of {{ total }} demo documents</p>
+{% if records %}
+<div class="card events-card inventory-table"><div class="table-scroll" role="region" aria-label="Administrator inventory" tabindex="0"><table><caption class="sr-only">Fictional administrator document inventory</caption><thead><tr>{% for label in ['Filename / ID','Category','Type','Classification','Sensitivity','Created','Status','Details'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>
+{% for document in records %}<tr><th scope="row">{{ document.filename }}<small>{{ document.id }}</small></th><td>{{ document.category }}</td><td>{{ badge(document.format) }}</td><td>{{ badge(document.classification) }}</td><td>{{ document.sensitivity }}</td><td>{{ document.created }}</td><td>{{ document.status }}</td><td><a class="inline-link" href="{{ url_for('admin_preview.document_detail', document_id=document.id) }}">Preview / manage<span class="sr-only"> {{ document.title }}</span></a></td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="document-grid inventory-cards">{% for document in records %}<article class="card document-card"><div class="section-heading"><h2>{{ document.title }}</h2>{{ badge(document.format) }}</div>{{ document_metadata(document) }}<a class="button" href="{{ url_for('admin_preview.document_detail', document_id=document.id) }}">Preview / manage<span class="sr-only"> {{ document.title }}</span></a></article>{% endfor %}</div>
+{% else %}{{ empty('admin_preview.inventory', 'documents') }}{% endif %}
+{{ simulation_dialog(categories) }}
+{% endblock %}

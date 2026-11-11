@@ -1,0 +1,17 @@
+{% from 'components/ui.html' import brand %}
+<aside class="sidebar" id="sidebar" aria-label="Dashboard sidebar">
+  {{ brand() }}
+  <p class="nav-label">WORKSPACE PREVIEW</p>
+  <nav aria-label="Dashboard navigation">
+    <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %}><span aria-hidden="true">▦</span> Overview</a>
+    <a class="nav-link {{ 'active' if request.endpoint in ['library', 'document_preview'] }}" href="/dashboard/documents" {% if request.endpoint == 'library' %}aria-current="page"{% endif %}><span aria-hidden="true">▤</span> Document library</a>
+    {% for endpoint, label, icon, detail in [('admin_preview.inventory', 'Document management', '▤', 'admin_preview.document_detail'), ('admin_preview.alerts', 'Security alerts', '◇', 'admin_preview.alert_detail'), ('admin_preview.events', 'Event history', '≡', 'admin_preview.event_detail')] %}
+    <a class="nav-link {{ 'active' if request.endpoint in [endpoint, detail] }}" href="{{ url_for(endpoint) }}" {% if request.endpoint in [endpoint, detail] %}aria-current="{{ 'page' if request.endpoint == endpoint else 'location' }}"{% endif %}><span aria-hidden="true">{{ icon }}</span>{{ label }}</a>
+    {% endfor %}
+    <a class="nav-link" href="{{ url_for('dashboard') }}#activity"><span aria-hidden="true">▤</span> Document activity</a>
+    <a class="nav-link" href="{{ url_for('dashboard') }}#severity"><span aria-hidden="true">◇</span> Alert severity</a>
+    <a class="nav-link" href="{{ url_for('dashboard') }}#events"><span aria-hidden="true">≡</span> Recent events</a>
+    <a class="nav-link" href="{{ url_for('employee') }}">Employee preview →</a>
+  </nav>
+  <div class="sidebar-bottom"><div class="sandbox"><span class="status-dot" aria-hidden="true"></span> Local demo workspace<p>No live monitoring connected</p></div><a class="nav-link" href="{{ url_for('login') }}">← Login UI preview</a></div>
+</aside>

@@ -1,0 +1,4 @@
+{% extends 'layouts/dashboard.html' %}
+{% from 'components/ui.html' import notice %}
+{% block title %}{{ label }} not found{% endblock %}
+{% block content %}{{ notice() }}<section class="card empty-state"><h1>{{ label }} not found</h1><p class="muted">That reference is not in the fixed fictional snapshot.</p><a class="button" href="{{ url_for(endpoint) }}">Back to {{ label|lower }} list</a></section>{% endblock %}

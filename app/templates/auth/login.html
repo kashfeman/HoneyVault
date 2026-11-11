@@ -1,0 +1,16 @@
+{% extends 'layouts/base.html' %}
+{% from 'components/ui.html' import brand, badge %}
+{% block title %}Login preview{% endblock %}
+{% block body %}
+<div class="login-shell">
+  <section class="login-story" aria-label="About HoneyVault">{{ brand() }}<div class="story-content">{{ badge('SECURITY, BY DESIGN') }}<h1>A clearer view.<br>A smarter decoy.</h1><p>Explore how synthetic documents could help illuminate insider risk, one interaction at a time.</p><div class="vault-visual" aria-hidden="true"><div class="vault-ring"><div class="vault-core">H<span>V</span></div></div><span class="orbit-label">SYNTHETIC DATA</span></div><div class="story-note"><span class="status-dot" aria-hidden="true"></span> Designed for a controlled university demonstration</div></div><p class="story-footer">HoneyVault / Intelligent fake data to catch insider threats</p></section>
+  <main id="main" class="login-main" tabindex="-1"><div class="login-card"><p class="eyebrow">HONEYVAULT WORKSPACE</p><h2>Welcome to the preview</h2><p class="muted">A look at the future administrator experience.</p><div class="notice login-notice"><div><strong>UI demonstration only</strong><p>No authentication or access protection exists. Use fictional values only. Inputs are discarded and never submitted.</p></div></div>
+    <form id="preview-login" action="{{ url_for('dashboard') }}" method="get">
+      <label for="demo-name">Demo username <span>(optional)</span></label><input id="demo-name" type="text" placeholder="demo.analyst" autocomplete="off" spellcheck="false" maxlength="80">
+      <label for="demo-password">Demo password <span>(optional)</span></label><div class="password-field"><input id="demo-password" type="password" placeholder="Fictional value only" autocomplete="off" maxlength="80"><button id="toggle-password" type="button" aria-controls="demo-password" aria-pressed="false" hidden>Show</button></div>
+      <p class="form-hint">Any values, or no values, open the same public demo.</p><button class="button button-primary login-submit" type="submit">Open demo dashboard <span aria-hidden="true">→</span></button>
+    </form><a class="text-link" href="{{ url_for('dashboard') }}">Go directly to the public dashboard →</a><p class="login-fine">Local frontend preview · No data is saved<br>Authentication will be added in a later milestone.</p>
+    <a class="text-link" href="{{ url_for('employee') }}">Explore the public employee workspace →</a>
+  </div></main>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'layouts/dashboard.html' %}
+{% from 'components/ui.html' import heading, notice, metric, badge, event_table %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<div class="heading-row">{{ heading('VISIBILITY STARTS HERE', 'Security overview', 'Explore a fictional snapshot of document activity and insider risk.') }}<span class="date-label">09 Nov 2026 <span>Fixed demo snapshot · UTC</span></span></div>
+{{ notice() }}
+<section class="metrics" aria-label="Synthetic demo metrics">
+  {{ metric('Demo documents', document_count, (document_count - decoy_count)|string + ' sample files · ' + decoy_count|string + ' decoys', href=url_for('admin_preview.inventory')) }}
+  {{ metric('Illustrative events', event_count, request_count|string + ' requests · ' + response_count|string + ' paired responses', 'blue', url_for('admin_preview.events')) }}
+  {{ metric('Illustrative alerts', alert_count, counts.High|string + ' high · ' + counts.Medium|string + ' medium · ' + counts.Low|string + ' low', 'amber', url_for('admin_preview.alerts')) }}
+  {{ metric('Demo actors', actor_count, 'Fictional identities in event history', 'purple', url_for('admin_preview.events')) }}
+</section>
+<div class="insight-grid">
+  <section class="card" id="activity"><div class="section-heading"><div><h2>Document activity</h2><p class="muted">Synthetic interactions across a fictional day</p></div>{{ badge('Demo') }}</div>
+    <div class="chart-legend"><span><i class="legend-dot cyan"></i> Sample documents</span><span><i class="legend-dot blue"></i> Decoy documents</span></div>
+    <div class="bar-chart" role="img" aria-label="Demo events by four-hour UTC interval. {% for time, sample, decoy in chart %}{{ time }}: {{ sample }} sample, {{ decoy }} decoy. {% endfor %}Total {{ event_count }} events, counting requests and responses separately.">
+      {% for time, sample, decoy in chart %}<div class="bar-group"><div class="bars"><span class="bar sample" style="--height: {{ sample * 22 }}%"></span><span class="bar decoy" style="--height: {{ decoy * 22 }}%"></span></div><span>{{ time }}</span></div>{% endfor %}
+    </div><p class="chart-note">09 Nov 2026 · UTC · {{ event_count }} illustrative events · Requests and responses counted separately</p>
+  </section>
+  <section class="card severity-card" id="severity"><div class="section-heading"><div><h2><a href="{{ url_for('admin_preview.alerts') }}">Alert severity ↗</a></h2><p class="muted">Illustrative distribution only</p></div>{{ badge('Demo') }}</div><div class="severity-total"><strong>{{ alert_count }}</strong><span>fictional alerts</span></div>
+    {% for label, count in counts.items() %}<div class="severity-row"><div>{{ badge(label, label|lower) }}<span>{{ count }} {{ 'alert' if count == 1 else 'alerts' }}</span></div><div class="severity-track"><span class="fill-{{ label|lower }}" style="--width: {{ count / alert_count * 100 if alert_count else 0 }}%"></span></div></div>{% endfor %}
+    <p class="chart-note">Severity is preassigned demo content. No rules are running.</p>
+  </section>
+</div>
+<section class="card events-card" id="events"><div class="section-heading"><div><h2>Recent events</h2><p class="muted">A small selection of fictional document interactions</p></div><a class="inline-link" href="{{ url_for('admin_preview.events') }}">All {{ event_count }} events →</a></div>{{ event_table(events) }}<div class="table-footer">Showing {{ events|length }} of {{ event_count }} illustrative events <span>No audit records are collected</span></div></section>
+{% endblock %}
