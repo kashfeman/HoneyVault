@@ -16,7 +16,7 @@ function control(properties = {}) {
 
 test('review updates only its row, counts once and resets with a fresh page', () => {
   function page() {
-    const button = control({ dataset: { review: 'ALERT-001' } });
+    const button = control({ dataset: { review: 'ALERT-001' }, textContent: 'Mark reviewed · Demo' });
     const status = control({ textContent: 'Open' });
     const other = control({ textContent: 'Reviewed' });
     const row = { dataset: { alertRow: 'ALERT-001' }, querySelector: () => status };
@@ -27,8 +27,9 @@ test('review updates only its row, counts once and resets with a fresh page', ()
       querySelector(selector) { return ({ '#reviewed-total': total, '#review-feedback': feedback })[selector] || null; },
       querySelectorAll(selector) { return selector === '[data-review]' ? [button] : [row, unrelated]; },
     };
-    runInNewContext(source, { document });
-    return { button, status, other, total, feedback };
+    let restore;
+    runInNewContext(source, { document, addEventListener(type, handler) { if (type === 'pageshow') restore = handler; } });
+    return { button, status, other, total, feedback, restore };
   }
   const first = page();
   assert.equal(first.button.hidden, false);
@@ -38,6 +39,12 @@ test('review updates only its row, counts once and resets with a fresh page', ()
   assert.equal(first.total.textContent, '2');
   assert.equal(first.button.disabled, true);
   assert.match(first.feedback.textContent, /Refresh or navigate to reset/);
+  first.button.handlers.click();
+  assert.equal(first.total.textContent, '2');
+  first.restore({ persisted: true });
+  assert.equal(first.status.textContent, 'Open');
+  assert.equal(first.button.disabled, false);
+  assert.equal(first.total.textContent, '1');
   first.button.handlers.click();
   assert.equal(first.total.textContent, '2');
   const refreshed = page();

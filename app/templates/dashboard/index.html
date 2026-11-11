@@ -18,7 +18,7 @@
     </div><p class="chart-note">09 Nov 2026 · UTC · {{ event_count }} illustrative events · Requests and responses counted separately</p>
   </section>
   <section class="card severity-card" id="severity"><div class="section-heading"><div><h2><a href="{{ url_for('admin_preview.alerts') }}">Alert severity ↗</a></h2><p class="muted">Illustrative distribution only</p></div>{{ badge('Demo') }}</div><div class="severity-total"><strong>{{ alert_count }}</strong><span>fictional alerts</span></div>
-    {% for label, count in counts.items() %}<div class="severity-row"><div>{{ badge(label, label|lower) }}<span>{{ count }} alerts</span></div><div class="severity-track"><span class="fill-{{ label|lower }}" style="--width: {{ count / alert_count * 100 if alert_count else 0 }}%"></span></div></div>{% endfor %}
+    {% for label, count in counts.items() %}<div class="severity-row"><div>{{ badge(label, label|lower) }}<span>{{ count }} {{ 'alert' if count == 1 else 'alerts' }}</span></div><div class="severity-track"><span class="fill-{{ label|lower }}" style="--width: {{ count / alert_count * 100 if alert_count else 0 }}%"></span></div></div>{% endfor %}
     <p class="chart-note">Severity is preassigned demo content. No rules are running.</p>
   </section>
 </div>

@@ -4,7 +4,7 @@
   <p class="nav-label">EMPLOYEE PREVIEW</p>
   <nav aria-label="Employee navigation">
     <a class="nav-link {{ 'active' if request.endpoint == 'employee' }}" href="{{ url_for('employee') }}" {% if request.endpoint == 'employee' %}aria-current="page"{% endif %}><span aria-hidden="true">⌂</span> Workspace home</a>
-    <a class="nav-link {{ 'active' if request.endpoint in ['library', 'document_preview'] }}" href="/employee/documents" {% if request.endpoint == 'library' %}aria-current="page"{% endif %}><span aria-hidden="true">▤</span> Document library</a>
+    <a class="nav-link {{ 'active' if request.endpoint in ['library', 'document_preview'] }}" href="/employee/documents" {% if request.endpoint in ['library', 'document_preview'] %}aria-current="{{ 'page' if request.endpoint == 'library' else 'location' }}"{% endif %}><span aria-hidden="true">▤</span> Document library</a>
     <a class="nav-link" href="{{ url_for('login') }}">← Preview start</a>
   </nav>
   <div class="sidebar-bottom"><div class="sandbox">Public demo workspace<p>No account or access protection</p></div></div>

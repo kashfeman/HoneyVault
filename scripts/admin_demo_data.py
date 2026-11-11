@@ -67,7 +67,7 @@ def dashboard_snapshot():
     counts = {severity: sum(alert["severity"] == severity for alert in ALERTS)
               for severity in ("High", "Medium", "Low")}
     recent = []
-    for event in reversed(EVENTS[-4:]):
+    for event in sorted(EVENTS, key=lambda item: item["timestamp"], reverse=True)[:4]:
         alert = ALERT_BY_ID.get(event["alert_id"])
         recent.append(dict(event, time=event["timestamp"][11:19] + " UTC",
                            document=DOCUMENT_BY_ID[event["document_id"]]["title"],

@@ -12,6 +12,7 @@ if (menu && sidebar) {
     const open = menu.getAttribute("aria-expanded") !== "true";
     menu.setAttribute("aria-expanded", String(open));
     sidebar.classList.toggle("is-open", open);
+    if (open) sidebar.querySelector("nav a")?.focus();
   });
   sidebar.querySelectorAll("nav a").forEach(link => {
     link.addEventListener("click", () => {
@@ -27,7 +28,11 @@ if (menu && sidebar) {
       menu.focus();
     }
   });
-  window.matchMedia("(max-width: 900px)").addEventListener("change", closeMenu);
+  window.matchMedia("(max-width: 900px)").addEventListener("change", () => {
+    const focusWasInside = sidebar.contains(document.activeElement);
+    closeMenu();
+    if (focusWasInside && window.matchMedia("(max-width: 900px)").matches) menu.focus();
+  });
 }
 
 const password = document.querySelector("#demo-password");

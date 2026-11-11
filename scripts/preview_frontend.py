@@ -22,6 +22,16 @@ def create_preview_app():
                 static_folder=str(root / "static"))
     app.register_blueprint(admin_preview)
 
+    @app.errorhandler(404)
+    def page_not_found(error):
+        # Recovery stays in the current workspace; no exception/path is displayed.
+        employee_view = request.path.startswith("/employee/")
+        admin_view = request.path.startswith("/dashboard/")
+        layout = "layouts/employee.html" if employee_view else "layouts/dashboard.html" if admin_view else "layouts/base.html"
+        return render_template("errors/not_found.html", layout=layout,
+                               workspace=employee_view or admin_view,
+                               home="employee" if employee_view else "dashboard" if admin_view else "login"), 404
+
     @app.get("/")
     def index():
         return redirect(url_for("login"))

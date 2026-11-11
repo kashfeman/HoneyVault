@@ -1,0 +1,9 @@
+{% extends layout %}
+{% from 'components/ui.html' import notice %}
+{% block title %}Page not found{% endblock %}
+{% macro recovery() %}
+{{ notice() }}
+<section class="card empty-state"><p class="eyebrow">PUBLIC FRONTEND PREVIEW</p><h1>Page not found</h1><p class="muted">That page is not part of this fictional workspace. Use the navigation or return to the preview home.</p><a class="button button-primary" href="{{ url_for(home) }}">Return to preview home</a></section>
+{% endmacro %}
+{% block content %}{{ recovery() }}{% endblock %}
+{% block body %}{% if workspace %}{{ super() }}{% else %}<main id="main" class="dashboard-main" tabindex="-1">{{ recovery() }}</main>{% endif %}{% endblock %}

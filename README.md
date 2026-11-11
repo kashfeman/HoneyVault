@@ -5,7 +5,7 @@
 A university Information Security demonstration using synthetic decoy documents.
 Stack: Python 3.12, Flask, Jinja2, HTML5, CSS3, vanilla JavaScript; SQLite later.
 
-## Current status: Milestone 4 frontend preview
+## Current status: Milestone 5 frontend polish and QA
 
 Includes a login UI, administrator dashboard, navy/cyan design system, reusable
 layouts and components, responsive navigation, activity chart, severity indicators,
@@ -213,6 +213,59 @@ dialog focus trapping and Escape/cancel, native validation messages, keyboard an
 screen-reader operation, horizontal history-table scrolling, filter combinations,
 and reset-on-refresh behavior. There are no uploads, downloads, persistence,
 real authentication, monitoring, rule evaluation or real audit records.
+
+## Milestone 5: Frontend polish and functional QA
+
+The shared snapshot remains six documents (four sample documents and two decoys),
+three alerts (one per severity, one reviewed), eight events and three fictional
+actors. The overview, administrator lists and employee library agree. Recent
+events now sort by UTC timestamp instead of relying on fixture declaration order.
+
+Keyboard navigation now moves focus into an opened mobile menu and returns it
+with Escape. Resizing into the mobile layout preserves a visible focus target.
+Document dialogs explicitly wrap Tab/Shift+Tab, retain native modal behavior and
+restore focus after cancellation or confirmation. Review simulations also reset
+when a browser restores a cached history page; no state is persisted.
+
+Responsive polish adds a scrollable desktop sidebar, clearer two-column mobile
+navigation, resilient header/card wrapping and visible table-region focus.
+Breadcrumbs use labeled navigation, document detail navigation announces the
+current section, and card/table toggles identify the content they control.
+Unknown page URLs now show a branded 404 recovery view in the matching workspace,
+without echoing exception details or the requested URL. Existing unknown-document
+and administrator-record recovery pages remain unchanged.
+
+Lightweight checks:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+node --test tests/test_admin_interactions.cjs tests/test_document_views.cjs tests/test_navigation.cjs
+```
+
+Optional real-browser regression checks use installed Microsoft Edge and Node
+22+ only, without npm packages or browser downloads. Start the preview using the
+normal command first, then run in another terminal:
+
+```powershell
+node tests/browser_frontend.cjs
+```
+
+The browser test visits eleven pages at 1440px, 768px and 375px; measures page-wide
+overflow; verifies the inventory table/card fallback; checks mobile keyboard
+navigation, modal focus/validation, temporary review/reset, and library view
+switching; and reports uncaught browser exceptions. History restoration reset is
+tested by dispatching a persisted `pageshow` event, not by assuming that the
+browser enabled its back/forward cache for a particular navigation.
+Use `--screenshots` to save two small images under ignored
+`generated/frontend-qa/`. The temporary Edge profile is removed after the test.
+Set `HONEYVAULT_EDGE` to an installed Edge executable if it is at a different path.
+
+Milestone 5 verification: 21 Python checks and five Node interaction tests passed.
+The exact preview startup command was used for live HTTP verification: 37 valid
+page URLs returned 200 and three unknown-page recovery URLs returned 404.
+Real-Edge responsive and interaction checks were also run; browser script output
+provides the exact per-run pass count. Screen-reader testing and browser engines
+other than Edge remain manual. This work adds no real backend security behavior.
 
 ## Future backend integration
 

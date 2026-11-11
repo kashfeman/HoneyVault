@@ -2,7 +2,7 @@
 
 ## Scope and status
 
-Milestones 2–4 supply frontend workspaces and an isolated local Flask preview.
+Milestones 2–5 supply frontend workspaces and an isolated local Flask preview.
 Backend behavior described below remains planned.
 Build a small Flask application backed by SQLite for a controlled university
 demonstration within 10–14 days. Avoid distributed services, background workers,
@@ -170,3 +170,26 @@ by temporary review changes. No browser/server persistence is used. Audit histor
 has no edit/delete controls. Future production work must separately implement
 authentication, roles, CSRF controls, storage, secure file handling, rule evaluation
 and audit integrity before connecting these views to backend services.
+
+## Milestone 5 presentation quality
+
+Recent dashboard events sort by timestamp, independent of fixture tuple order.
+The existing shared snapshot still drives document/event/alert counts. Public
+records remain free of administrator classifications and sensitivity fields.
+
+The app-level 404 handler selects the current workspace layout and a safe home
+link, without showing the requested path or internal exception details. It does
+not change existing record-specific recovery routes or imply authorization.
+The stale-process/occupied-port guard and local-only startup behavior are retained.
+
+Mobile disclosure navigation manages keyboard focus; dialogs explicitly wrap
+Tab/Shift+Tab and use native modal/cancel behavior. Temporary review state resets
+on persisted `pageshow` as well as normal reloads. All state remains in the current
+DOM; there are no browser storage or backend writes. Audit records stay read-only.
+
+Optional `tests/browser_frontend.cjs` drives an installed headless Edge via its
+loopback debugging interface using Node's built-in WebSocket/fetch APIs. It checks
+responsive layout and actual native-browser interactions without third-party
+packages. Temporary profiles are isolated and removed, and optional small
+screenshots stay under ignored `generated/`. Unit tests remain lightweight;
+assistive-technology and cross-engine validation remain manual.
