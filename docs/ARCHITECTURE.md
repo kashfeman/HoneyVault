@@ -3,7 +3,8 @@
 ## Scope and status
 
 Milestones 2–5 supply frontend workspaces and an isolated local Flask preview.
-Backend behavior described below remains planned.
+Milestone 6 adds the separate application factory and persistent database schema.
+Authentication, protected feature routes, audit recording and detection remain planned.
 Build a small Flask application backed by SQLite for a controlled university
 demonstration within 10–14 days. Avoid distributed services, background workers,
 and machine-learning infrastructure unless a demonstrated need arises.
@@ -94,8 +95,8 @@ control, and keep unrelated files and Git history intact.
 
 `scripts/preview_frontend.py` owns a separate preview factory with GET routes
 for `/`, `/login`, and `/dashboard`. The runner binds to `127.0.0.1:5000` with
-debugging disabled. Production feature packages and `app/__init__.py` remain
-reserved for later backend integration.
+debugging disabled. Production feature packages remain reserved for later integration;
+`app/__init__.py` now owns the separate Milestone 6 backend factory.
 
 Shared templates live under `app/templates/layouts` and `components`; feature
 templates live under `auth` and `dashboard`. Local CSS supplies design tokens,
@@ -193,3 +194,60 @@ responsive layout and actual native-browser interactions without third-party
 packages. Temporary profiles are isolated and removed, and optional small
 screenshots stay under ignored `generated/`. Unit tests remain lightweight;
 assistive-technology and cross-engine validation remain manual.
+
+
+## Milestone 6 implemented persistence
+
+`create_app()` initializes the shared Flask-SQLAlchemy extension without creating
+tables or seeding records. Development configuration reads `SECRET_KEY` and
+`DATABASE_PATH` from the process environment; testing configuration can use
+in-memory SQLite or an explicit temporary URI. The backend registers only a JSON
+`/health` route and the local CLI `init-db` command, with no static-file serving.
+The separate public preview remains on port 5000; `run.py` serves the backend on
+127.0.0.1:5001 with debug/reload disabled. Health is process liveness only.
+
+| Table | Fields and constraints |
+| --- | --- |
+| `user` | Integer PK; unique required username; required password_hash; role constrained to admin/employee (default employee); required active flag; created_at/updated_at UTC timestamps |
+| `document` | UUID string PK; required filename, category, format and unique storage_reference; is_decoy flag; sensitivity constrained to public/internal/confidential/restricted; status active/archived |
+| `detection_rule` | Stable string identifier PK; required name, JSON parameters, severity low/medium/high/critical and enabled flag |
+| `audit_event` | UUID string PK; required occurred_at UTC timestamp, action and outcome; nullable actor_id, document_id and triggered rule_id FKs |
+| `alert` | UUID string PK; required severity, rule_id FK, explanation, created_at UTC and review_state unreviewed/reviewed; nullable actor_id and document_id FKs |
+| `alert_events` | Composite PK (alert_id, event_id), both required FKs; connects alerts with supporting audit events |
+
+Users, documents and rules each have one-to-many relationships with audit events
+and alerts. Alerts and audit events have a many-to-many supporting relationship.
+Nullable event actors allow future anonymous attempts; nullable documents/rules
+allow events without those references. Alerts require a rule but can describe
+activity without a known actor/document. Reverse ORM relationships are available.
+Foreign keys reject nonexistent references; no automatic delete cascades are
+configured. Deletion and retention policies are future service-layer work.
+No public API serializes any of these models.
+
+Indexes cover event timestamps, alert creation/review state, all actor/document/
+rule foreign keys, document category/status, and reverse supporting-event lookup.
+PKs and unique fields receive SQLite's uniqueness indexes. ORM inserts supply
+UUIDs and UTC defaults; user updated_at changes on ORM updates. These timestamps
+are application-maintained, not database triggers or tamper-proof evidence.
+`UTCDateTime` rejects naive timestamps, normalizes aware inputs to UTC for SQLite
+storage, and restores timezone information on retrieval.
+
+Werkzeug hashes passwords with its default salted scrypt algorithm through
+`User.set_password`; `check_password` verifies hashes. These are persistence
+helpers, not a login flow or password policy. JSON parameters are stored only;
+no evaluation or parameter validation engine exists. Reassign parameter dictionaries
+to persist edits rather than mutating nested JSON in place.
+`storage_reference` is private metadata, not a trusted filesystem path: future
+file services must enforce the private root and reject traversal before use.
+
+SQLite foreign-key enforcement is enabled for each SQLAlchemy SQLite connection
+using a fixed PRAGMA. All record operations use SQLAlchemy. The default database
+is under ignored `instance/`. `init-db` creates missing tables non-destructively,
+is repeatable, and creates no users or business data. It is not a schema migration
+system. No destructive reset command is provided. The existing `.gitignore`
+already excludes local secrets, SQLite files and instance storage.
+
+Future integration must add session authentication, CSRF protection and explicit
+server-side employee/admin access policies before registering feature blueprints
+or passing real records into shared templates. Public preview fixtures must remain
+separate from real inventory, audit events and classifications.
