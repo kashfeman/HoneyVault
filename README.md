@@ -5,24 +5,121 @@
 A university Information Security demonstration using synthetic decoy documents.
 Stack: Python 3.12, Flask, Jinja2, HTML5, CSS3, vanilla JavaScript; SQLite and Flask-SQLAlchemy.
 
-## Current status: Milestone 6 backend and database foundation
+## Current status: Milestone 7 authentication and role access
 
 Includes a login UI, administrator dashboard, navy/cyan design system, reusable
 layouts and components, responsive navigation, activity chart, severity indicators,
 and recent-events table. All identities, documents, metrics, events and dates are
 fixed fictional demo content, not live information.
 
-**The preview is public and unprotected.** There is no authentication, session,
-role enforcement, database connection, persistent data, download, audit collection or threat
-detection in the preview. The separate backend now provides database models and initialization only. Optional login values are discarded; fields have no submission names.
-Do not enter real credentials. Direct dashboard access requires no login.
+**The port 5000 preview is public and unprotected.** It has no authentication,
+sessions, role enforcement, database connection, downloads, audit collection or
+threat detection. Its optional login values are discarded; never enter account
+passwords there. The separate port 5001 application now provides real
+authentication and role checks with fictional workspace content.
 
-## Milestone 6: backend foundation
+## Milestone 7: authenticated local application
 
-The backend is separate from the public preview. It exposes only `GET /health`,
-returning `{"status": "ok"}`. This is a process health check, not a database
-readiness probe. Backend `/login`, `/dashboard` and document routes return 404.
-No frontend templates, demo fixtures or administrator routes are registered there.
+Port **5001** runs real login and role checks. Port **5000** remains the separate,
+public, unsecured frontend demonstration; never enter account passwords there.
+The authenticated app reuses the design but shows accurate authentication notices.
+Workspace documents, metrics, alerts and events are still synthetic fixtures.
+No document CRUD, monitoring, rule evaluation or persistent review is implemented.
+
+From the repository root in PowerShell (Python 3.12):
+
+```powershell
+# Only create .venv if it does not already exist.
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$env:HONEYVAULT_ENV = "development"
+# Generate a private session-signing key in this terminal; this prints no secret.
+$env:SECRET_KEY = & .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+.\.venv\Scripts\python.exe -m flask --app app:create_app init-db
+.\.venv\Scripts\python.exe -m flask --app app:create_app create-user --username demo.employee --role employee
+.\.venv\Scripts\python.exe -m flask --app app:create_app create-user --username demo.admin --role admin
+.\.venv\Scripts\python.exe run.py
+```
+
+The account commands prompt for hidden passwords twice. Choose unique local demo
+passwords of 12-1024 characters; no password CLI option, seed credentials or public
+registration exists. Usernames allow 1-80 letters, digits, dots, underscores and
+hyphens. Duplicate usernames are rejected without changing existing accounts.
+Use only fictional account identities. No accounts are automatically created.
+`init-db` also adds the new `auth_session` table to an existing Milestone 6 database
+without changing prior tables or records.
+
+Open http://127.0.0.1:5001/login. Employees land at `/employee`; administrators
+land at `/dashboard`. Anonymous workspace requests redirect to `/login` without
+copying the original query into a URL. The `next` parameter is deliberately
+ignored. Authenticated users with the wrong role receive a safe 403; admins do
+not inherit employee workspace access. Roles and active status are reloaded from
+the database on every request. No username, password or session token is added
+to redirect URLs. Use fictional searches because library GET filters appear in
+browser history and development access logs.
+
+| Route | Access and behavior |
+| --- | --- |
+| `GET /health` | Public process liveness |
+| `GET/POST /login` | Real login form; POST requires CSRF |
+| `POST /logout` | Authenticated, CSRF-protected logout; GET is rejected |
+| `GET /` | Redirect to login or the account's role landing page |
+| `/employee`, `/employee/documents`, `/employee/documents/<id>` | Employees only; sanitized fictional data and escaped content |
+| `/dashboard`, `/dashboard/documents`, `/dashboard/documents/<id>` | Administrators only; fictional data |
+| `/dashboard/manage-documents[/<id>]`, `/dashboard/alerts[/<id>]`, `/dashboard/events[/<id>]` | Administrators only; existing presentation demonstrations, no backend operations |
+
+Session cookies contain a signed user ID and opaque random authentication token,
+not passwords, hashes or private profile data. A token digest and absolute expiry
+are stored in SQLite. Authentication clears prior browser state and creates a new
+token; logout deletes its database record and clears the cookie. Replaying the
+old cookie after logout fails. Sessions expire after 30 minutes without sliding
+renewal or remember-me cookies. Expired database session rows are pruned on the
+next successful login. Deactivation blocks both new logins and existing sessions.
+Changing the signing key invalidates existing browser cookies.
+
+HttpOnly and SameSite=Lax are always set. Secure cookies are the default;
+`HONEYVAULT_ENV=development` explicitly disables Secure for loopback HTTP on port
+5001. An HTTPS deployment must omit that override or set `HONEYVAULT_ENV=production`
+and supply a durable private random signing key. `.env` is not auto-loaded; do
+not commit it. Missing/short keys disable auth/workspace routes with 503 while
+health and CLI setup remain available. Security responses avoid internal details;
+non-static responses use `Cache-Control: no-store`.
+
+Login POST requests are limited to 10/minute and 50/hour per source IP, including
+successful attempts. Invalid usernames, passwords and inactive accounts receive
+the same message. Unknown usernames take a dummy password-hash verification path.
+The limiter ignores untrusted forwarding headers. Its in-memory counters are
+appropriate for this single-process local demonstration: restarts clear them,
+multiple workers do not share counters, and distributed attack protection is not
+provided. A deployment would need shared limiter storage and an explicit trusted
+proxy configuration. Do not expose the Flask development server to the Internet.
+
+Verification from the root:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+node --test tests/test_admin_interactions.cjs tests/test_document_views.cjs tests/test_navigation.cjs
+```
+
+`pytest.ini` disables the problematic cache and places temporary databases under
+ignored `generated/pytest-temp` for Windows. Pytest clears that directory between
+runs: reserve it exclusively for tests and do not run simultaneous test processes
+using the same base directory. Tests use isolated databases and random ephemeral
+passwords and secrets. They never create demo accounts in the working database.
+
+Milestone 7 verification on Python 3.12.10: **61 tests and 35 subtests passed**
+with pytest; the standalone frontend unittest suite passed **21 tests**; Node
+interaction tests passed **5 tests**. `init-db` succeeded against the existing
+local database, `pip check` found no broken requirements, and `git diff --check`
+passed. No working-database accounts were created. Browser visual and
+assistive-technology checks were not rerun.
+
+## Milestone 6: preserved database foundation
+
+The backend is separate from the public preview. `GET /health` returns
+`{"status": "ok"}` as process liveness, not database readiness. Milestone 7 adds
+authenticated workspace routes described above; the database foundation remains.
 
 Run these commands from the repository root in PowerShell with Python 3.12:
 
@@ -52,13 +149,13 @@ loaded**. Optional overrides before initialization and startup:
 
 ```powershell
 $env:DATABASE_PATH = "instance/local-demo.sqlite3"
-# SECRET_KEY may be supplied privately through the environment when needed.
+# Supply SECRET_KEY as shown in the Milestone 7 setup before signing in.
 ```
 
-`SECRET_KEY` defaults to unset; no secret or credentials are generated. No
-sessions are used. Future authentication must require a strong private secret
-and select cookie settings appropriate to the deployment. Current cookie defaults
-are Secure, HttpOnly and SameSite=Lax. Never commit secrets or database files.
+`SECRET_KEY` defaults to unset; authentication fails closed with HTTP 503 unless
+a private value of at least 32 characters is supplied. See the setup above.
+Cookie defaults are Secure, HttpOnly and SameSite=Lax; local HTTP requires the
+explicit development environment setting. Never commit secrets or database files.
 Keep database overrides under ignored `instance/` (or outside the repository).
 `create_app("testing")` uses an isolated in-memory SQLite configuration; tests
 instead override the URI with temporary files to verify persistence as well.
@@ -87,11 +184,9 @@ permission warning. The root-level `init-db` command succeeded twice, and the
 created SQLite file was confirmed ignored by Git. Browser visual checks were
 not rerun for this backend-only milestone.
 
-This milestone does not implement login/logout, authentication sessions, role
-checks, protected document access, document generation, audit recording, alert
-generation or rule evaluation. The next milestone will add authentication,
-server-side authorization, CSRF protection and session controls before connecting
-real data to the existing templates. The public preview remains fictional and
+Milestone 7 adds login/logout, sessions, role checks and CSRF protection.
+Real document storage/access operations, generation, audit recording, alert
+generation and rule evaluation remain unimplemented. The public preview remains fictional and
 unprotected; do not expose private records through it.
 
 ## Exact local preview commands (PowerShell)
@@ -140,7 +235,7 @@ Startup regression checks:
 - `app/config.py`, `extensions.py`, `models.py`: backend configuration and persistence.
 - `run.py`: local backend runner on port 5001.
 - `app/auth/`, `documents/`, `audit/`, `detection/`, `dashboard/`: existing backend
-  package boundaries, reserved for later milestones.
+  package boundaries; auth is implemented, the remaining services are future work.
 - `app/templates/layouts/`: base HTML document and dashboard shell.
 - `app/templates/components/`: sidebar, brand, headers, badges, demo notice,
   metrics and event-table macros.

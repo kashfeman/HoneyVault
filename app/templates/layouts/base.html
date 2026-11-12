@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>{% block title %}HoneyVault{% endblock %} · Frontend demo</title>
+  <title>{% block title %}HoneyVault{% endblock %} · {{ 'Authenticated demo' if config.get('AUTHENTICATED_APP') else 'Frontend demo' }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
   <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/documents.css') }}">

@@ -1,5 +1,6 @@
 """Environment is read on each factory invocation; .env is not auto-loaded."""
 import os
+from datetime import timedelta
 from pathlib import Path
 
 
@@ -11,6 +12,11 @@ class DevelopmentConfig:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_NAME = "honeyvault_auth"
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
+    SESSION_REFRESH_EACH_REQUEST = False
+    MAX_CONTENT_LENGTH = 16 * 1024
+    RATELIMIT_STORAGE_URI = "memory://"
 
     @staticmethod
     def environment():
@@ -19,6 +25,7 @@ class DevelopmentConfig:
         if not path.is_absolute():
             path = root / path
         return {"SECRET_KEY": os.environ.get("SECRET_KEY") or None,
+                "SESSION_COOKIE_SECURE": os.environ.get("HONEYVAULT_ENV", "production") != "development",
                 "SQLALCHEMY_DATABASE_URI": "sqlite:///" + path.resolve().as_posix()}
 
 

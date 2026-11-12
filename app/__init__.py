@@ -7,7 +7,7 @@ from .extensions import db
 
 
 def create_app(config=None):
-    app = Flask(__name__, static_folder=None)
+    app = Flask(__name__)
     app.config.from_object(DevelopmentConfig)
     app.config.update(DevelopmentConfig.environment())
     if config == "testing":
@@ -18,6 +18,10 @@ def create_app(config=None):
         app.config.from_object(config)
     db.init_app(app)
     from . import models  # Register metadata, without creating tables or data.
+    from .auth import init_auth
+    from .workspaces import register_workspaces
+    init_auth(app)
+    register_workspaces(app)
 
     @app.get("/health")
     def health():
