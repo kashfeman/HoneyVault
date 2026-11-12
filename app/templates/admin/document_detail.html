@@ -8,7 +8,7 @@
 {{ notice() }}
 <section class="card preview-metadata" aria-label="Administrator document metadata">{{ document_metadata(document) }}</section>
 <section class="card preview-content" aria-labelledby="admin-content"><div class="section-heading"><h2 id="admin-content">{{ document.format }} preview · Fictional content</h2>{{ badge('Demo') }}</div><pre tabindex="0" aria-label="Fictional document text">{{ document.content }}</pre></section>
-<p class="library-footnote">No file generation, upload, download or persistence. Classification labels appear only in administrator presentation views; public demo routes are not access-protected.</p>
+<p class="library-footnote">No file generation, upload, download or persistence. Classification labels appear only in administrator presentation views; {% if config.get('AUTHENTICATED_APP') %}these routes require an administrator account.{% else %}public demo routes are not access-protected.{% endif %}</p>
 <noscript><p class="notice">Management simulation requires JavaScript; read-only details remain available.</p></noscript>
 {{ simulation_dialog(categories, document) }}
 {% endblock %}

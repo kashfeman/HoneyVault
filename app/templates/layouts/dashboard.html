@@ -8,9 +8,9 @@
   {% include 'components/sidebar.html' %}
   <div class="workspace">
     {% set section = 'Page not found' if request.endpoint is none else 'Alerts' if request.endpoint in ['admin_preview.alerts', 'admin_preview.alert_detail'] else 'Event history' if request.endpoint in ['admin_preview.events', 'admin_preview.event_detail'] else 'Document management' if request.endpoint in ['admin_preview.inventory', 'admin_preview.document_detail'] else 'Overview' if request.endpoint == 'dashboard' else 'Documents' %}
-    <header class="topbar"><div class="topbar-start"><button class="button menu-toggle" type="button" aria-controls="sidebar" aria-expanded="false" hidden>Menu</button><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{{ url_for('dashboard') }}">Workspace</a> <span class="breadcrumb" aria-current="location">/ {{ section }}</span></nav></div><span class="profile"><span class="avatar" aria-hidden="true">DA</span> Demo administrator</span></header>
+    <header class="topbar"><div class="topbar-start"><button class="button menu-toggle" type="button" aria-controls="sidebar" aria-expanded="false" hidden>Menu</button><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{{ url_for('dashboard') }}">Workspace</a> <span class="breadcrumb" aria-current="location">/ {{ section }}</span></nav></div><span class="profile"><span class="avatar" aria-hidden="true">DA</span> {{ current_user.username if config.get('AUTHENTICATED_APP') else 'Demo administrator' }}</span></header>
     <main id="main" class="dashboard-main" tabindex="-1">{% block content %}{% endblock %}</main>
-    <footer>HoneyVault · University security demonstration <span>Public administrator UI preview</span></footer>
+    <footer>HoneyVault · University security demonstration <span>{{ 'Protected administrator demo - No live operations' if config.get('AUTHENTICATED_APP') else 'Public administrator UI preview' }}</span></footer>
   </div>
 </div>
 {% endblock %}

@@ -1,6 +1,7 @@
 """Persistence only; no authentication, event writer, or rule engine."""
 from datetime import datetime, timezone
 from uuid import uuid4
+from flask_login import UserMixin
 from sqlalchemy.types import TypeDecorator, DateTime
 from werkzeug.security import check_password_hash, generate_password_hash
 from .extensions import db
@@ -38,7 +39,7 @@ alert_events = db.Table(
 )
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.Text, nullable=False)
@@ -55,6 +56,13 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+
+class AuthSession(db.Model):
+    """Revocable sessions; only a digest of the random browser token is stored."""
+    token_hash = db.Column(db.String(64), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    expires_at = db.Column(UTCDateTime(), nullable=False, index=True)
 
 
 class Document(db.Model):

@@ -30,11 +30,11 @@ def sample_user():
 
 
 def test_factory_configuration_and_health(monkeypatch, tmp_path):
-    monkeypatch.setenv("SECRET_KEY", "test-only-environment-value")
+    monkeypatch.setenv("SECRET_KEY", "test-only-environment-value-long-enough")
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "not-created.sqlite3"))
     app = create_app()
     assert not app.debug and not app.testing
-    assert app.config["SECRET_KEY"] == "test-only-environment-value"
+    assert app.config["SECRET_KEY"] == "test-only-environment-value-long-enough"
     assert app.config["SESSION_COOKIE_HTTPONLY"]
     assert app.config["SESSION_COOKIE_SECURE"]
     assert app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
@@ -43,9 +43,10 @@ def test_factory_configuration_and_health(monkeypatch, tmp_path):
     assert client.get("/health").json == {"status": "ok"}
     assert "Set-Cookie" not in client.get("/health").headers
     assert client.post("/health").status_code == 405
-    assert {r.rule for r in app.url_map.iter_rules()} == {"/health"}
-    for path in ("/login", "/dashboard", "/dashboard/events", "/documents", "/static/test.sqlite3"):
-        assert client.get(path).status_code == 404
+    assert client.get("/login").status_code == 200
+    for path in ("/dashboard", "/dashboard/events", "/employee"):
+        assert client.get(path).status_code == 302
+    assert client.get("/documents").status_code == 404
     monkeypatch.delenv("SECRET_KEY")
     assert create_app().secret_key is None
     testing = create_app("testing")
@@ -55,7 +56,7 @@ def test_factory_configuration_and_health(monkeypatch, tmp_path):
 
 def test_initialization_repeatable_persistent_and_empty(backend):
     assert set(inspect(db.engine).get_table_names()) == {
-        "user", "document", "audit_event", "detection_rule", "alert", "alert_events"}
+        "user", "document", "audit_event", "detection_rule", "alert", "alert_events", "auth_session"}
     for table in db.metadata.sorted_tables:
         assert db.session.execute(select(db.func.count()).select_from(table)).scalar_one() == 0
     user = sample_user()

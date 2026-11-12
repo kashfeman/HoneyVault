@@ -4,7 +4,8 @@
 
 Milestones 2–5 supply frontend workspaces and an isolated local Flask preview.
 Milestone 6 adds the separate application factory and persistent database schema.
-Authentication, protected feature routes, audit recording and detection remain planned.
+Milestone 7 adds authentication, CSRF and role-protected presentation routes.
+Audit recording, document operations and detection remain planned.
 Build a small Flask application backed by SQLite for a controlled university
 demonstration within 10–14 days. Avoid distributed services, background workers,
 and machine-learning infrastructure unless a demonstrated need arises.
@@ -201,8 +202,8 @@ assistive-technology and cross-engine validation remain manual.
 `create_app()` initializes the shared Flask-SQLAlchemy extension without creating
 tables or seeding records. Development configuration reads `SECRET_KEY` and
 `DATABASE_PATH` from the process environment; testing configuration can use
-in-memory SQLite or an explicit temporary URI. The backend registers only a JSON
-`/health` route and the local CLI `init-db` command, with no static-file serving.
+in-memory SQLite or an explicit temporary URI. Milestone 6 originally exposed JSON `/health` and CLI `init-db`. Milestone 7
+adds authentication, public static styling assets and protected presentation routes.
 The separate public preview remains on port 5000; `run.py` serves the backend on
 127.0.0.1:5001 with debug/reload disabled. Health is process liveness only.
 
@@ -233,8 +234,7 @@ are application-maintained, not database triggers or tamper-proof evidence.
 storage, and restores timezone information on retrieval.
 
 Werkzeug hashes passwords with its default salted scrypt algorithm through
-`User.set_password`; `check_password` verifies hashes. These are persistence
-helpers, not a login flow or password policy. JSON parameters are stored only;
+`User.set_password`; `check_password` verifies hashes. Milestone 7 reuses these helpers for credential verification and CLI account creation. JSON parameters are stored only;
 no evaluation or parameter validation engine exists. Reassign parameter dictionaries
 to persist edits rather than mutating nested JSON in place.
 `storage_reference` is private metadata, not a trusted filesystem path: future
@@ -247,7 +247,71 @@ is repeatable, and creates no users or business data. It is not a schema migrati
 system. No destructive reset command is provided. The existing `.gitignore`
 already excludes local secrets, SQLite files and instance storage.
 
-Future integration must add session authentication, CSRF protection and explicit
-server-side employee/admin access policies before registering feature blueprints
-or passing real records into shared templates. Public preview fixtures must remain
+Milestone 7 supplies session authentication, CSRF and explicit employee/admin
+policies for presentation routes. Future document services must add record-level
+access policy before passing private records into shared templates. Public preview fixtures must remain
 separate from real inventory, audit events and classifications.
+
+
+## Milestone 7 authentication and account access
+
+`app/auth/` initializes Flask-Login, Flask-WTF CSRFProtect and Flask-Limiter.
+`UserMixin` adds the Flask-Login interface to the existing User model without
+changing its database columns. `login_required` is provided by Flask-Login;
+`role_required` wraps it and enforces exact database role equality. Inactive or
+missing users fail session loading. Admins are intentionally denied employee
+routes and employees are denied all administrator routes. Client parameters never
+select the authenticated role or account.
+
+The additional `auth_session` table has a 64-character SHA-256 token digest PK,
+required indexed user_id FK and required indexed UTC expires_at. The random
+32-byte session token is carried inside Flask's signed cookie; only the digest
+is stored server-side. Login clears pre-authentication state, rotates CSRF state,
+and establishes a new database-backed authentication record. Logout is POST-only,
+validates CSRF, deletes the record, and clears browser state. This makes signed
+cookie replay ineffective after logout. Records expire after an absolute
+30-minute lifetime and are checked on every authenticated request. Opportunistic
+cleanup removes expired records on successful login. No remember-me is enabled.
+Concurrent browser sessions are allowed; logout revokes the current session only.
+
+A private signing key of at least 32 characters is required for auth/workspace
+requests; missing or short keys yield 503. CLI init/account creation and health
+remain usable without a key. The key is never generated at application startup.
+Development HTTP requires explicit HONEYVAULT_ENV=development; other values use
+Secure cookies. HttpOnly, SameSite=Lax, no-store pages, frame denial, no-referrer
+and nosniff headers supplement server-side checks. HSTS is sent for HTTPS requests.
+The application does not automatically trust forwarded headers.
+
+Login uses generic errors and a random dummy hash for unknown accounts. POST
+attempts are limited per source IP to 10/minute and 50/hour using process-local
+memory, which is a documented local-demo limitation. No persistent failed-login
+or audit records are produced. Request bodies and password length are bounded.
+Flask-WTF protects state-changing routes globally. Fixed role landing pages ignore
+all next parameters, avoiding redirect parsing ambiguities and URL data leakage.
+
+`create-user` is local CLI only, permits explicit employee/admin roles, prompts for
+a hidden confirmed password, hashes it and rejects duplicates. No public account
+registration, credential provisioning seed, account recovery, password-change UI,
+MFA or persistent lockout is implemented. CLI creation requires prior init-db.
+
+`app/workspaces.py` reuses sanitized public document fixtures and the existing
+administrator preview blueprint. It wraps each administrator view in this app's
+view registry without mutating the shared blueprint or public preview factory.
+The frontend preview still runs independently on port 5000 with no authentication
+or database requirement. Conditional template mode retains the preview markup
+and disclosures while the real app supplies login, logout and accurate notices.
+Employee views never receive administrator fixtures, classification or sensitivity.
+No real document content, alert processing or administrator write operations are
+connected. Existing browser-only simulations remain demonstrations.
+
+Tests cover real CSRF, session replay after logout, expiry, inactive users,
+password failure, fixed redirects, source-IP throttling, CLI account safety,
+role changes and every administrator route group, plus prior database/frontend
+contracts. Windows-compatible temporary databases live under ignored generated/
+pytest-temp; pytest owns and clears that dedicated directory. See README for
+exact local setup and test commands.
+
+
+Implementation references: [Flask-Login](https://flask-login.readthedocs.io/en/latest/),
+[Flask-WTF CSRF](https://flask-wtf.readthedocs.io/en/1.2.x/csrf/) and
+[Flask-Limiter](https://flask-limiter.readthedocs.io/en/stable/).

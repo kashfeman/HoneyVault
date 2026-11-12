@@ -1,7 +1,7 @@
 {% from 'components/ui.html' import brand %}
 <aside class="sidebar" id="sidebar" aria-label="Dashboard sidebar">
   {{ brand() }}
-  <p class="nav-label">WORKSPACE PREVIEW</p>
+  <p class="nav-label">{{ 'ADMINISTRATOR WORKSPACE' if config.get('AUTHENTICATED_APP') else 'WORKSPACE PREVIEW' }}</p>
   <nav aria-label="Dashboard navigation">
     <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %}><span aria-hidden="true">▦</span> Overview</a>
     <a class="nav-link {{ 'active' if request.endpoint in ['library', 'document_preview'] }}" href="/dashboard/documents" {% if request.endpoint == 'library' %}aria-current="page"{% endif %}><span aria-hidden="true">▤</span> Document library</a>
@@ -11,7 +11,8 @@
     <a class="nav-link" href="{{ url_for('dashboard') }}#activity"><span aria-hidden="true">▤</span> Document activity</a>
     <a class="nav-link" href="{{ url_for('dashboard') }}#severity"><span aria-hidden="true">◇</span> Alert severity</a>
     <a class="nav-link" href="{{ url_for('dashboard') }}#events"><span aria-hidden="true">≡</span> Recent events</a>
-    <a class="nav-link" href="{{ url_for('employee') }}">Employee preview →</a>
+    {% if not config.get('AUTHENTICATED_APP') %}<a class="nav-link" href="{{ url_for('employee') }}">Employee preview →</a>{% endif %}
   </nav>
-  <div class="sidebar-bottom"><div class="sandbox"><span class="status-dot" aria-hidden="true"></span> Local demo workspace<p>No live monitoring connected</p></div><a class="nav-link" href="{{ url_for('login') }}">← Login UI preview</a></div>
+  <div class="sidebar-bottom"><div class="sandbox"><span class="status-dot" aria-hidden="true"></span> Local demo workspace<p>No live monitoring connected</p></div><a class="nav-link" href="{{ url_for('login') }}">← {{ 'Account home' if config.get('AUTHENTICATED_APP') else 'Login UI preview' }}</a></div>
+{% if config.get('AUTHENTICATED_APP') %}{% include 'auth/logout_form.html' %}{% endif %}
 </aside>
