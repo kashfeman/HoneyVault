@@ -21,6 +21,8 @@ def create_app(config=None):
     from .auth import init_auth
     from .workspaces import register_workspaces
     init_auth(app)
+    from .documents.demo import init_documents
+    init_documents(app)
     register_workspaces(app)
 
     @app.get("/health")

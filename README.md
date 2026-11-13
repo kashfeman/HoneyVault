@@ -5,12 +5,12 @@
 A university Information Security demonstration using synthetic decoy documents.
 Stack: Python 3.12, Flask, Jinja2, HTML5, CSS3, vanilla JavaScript; SQLite and Flask-SQLAlchemy.
 
-## Current status: Milestone 7 authentication and role access
+## Current status: Milestone 8 secure employee document library
 
 Includes a login UI, administrator dashboard, navy/cyan design system, reusable
 layouts and components, responsive navigation, activity chart, severity indicators,
-and recent-events table. All identities, documents, metrics, events and dates are
-fixed fictional demo content, not live information.
+and recent-events table. All content is fictional. Employee documents on port 5001 now come from the
+database and private storage; administrator dashboards remain presentation fixtures.
 
 **The port 5000 preview is public and unprotected.** It has no authentication,
 sessions, role enforcement, database connection, downloads, audit collection or
@@ -23,7 +23,8 @@ authentication and role checks with fictional workspace content.
 Port **5001** runs real login and role checks. Port **5000** remains the separate,
 public, unsecured frontend demonstration; never enter account passwords there.
 The authenticated app reuses the design but shows accurate authentication notices.
-Workspace documents, metrics, alerts and events are still synthetic fixtures.
+Employee documents are synthetic database records; administrator metrics, alerts
+and events remain presentation fixtures.
 No document CRUD, monitoring, rule evaluation or persistent review is implemented.
 
 From the repository root in PowerShell (Python 3.12):
@@ -36,6 +37,7 @@ $env:HONEYVAULT_ENV = "development"
 # Generate a private session-signing key in this terminal; this prints no secret.
 $env:SECRET_KEY = & .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
 .\.venv\Scripts\python.exe -m flask --app app:create_app init-db
+.\.venv\Scripts\python.exe -m flask --app app:create_app seed-demo-documents
 .\.venv\Scripts\python.exe -m flask --app app:create_app create-user --username demo.employee --role employee
 .\.venv\Scripts\python.exe -m flask --app app:create_app create-user --username demo.admin --role admin
 .\.venv\Scripts\python.exe run.py
@@ -454,3 +456,89 @@ Planned capabilities include synthetic document generation, controlled previews
 and downloads, UTC audit events, role checks, and deterministic explained alerts.
 No real employee records, secrets, spyware, macros, hidden tracking or external
 monitoring belong in this project. See [architecture](docs/ARCHITECTURE.md).
+
+## Milestone 8: secure employee document library (Usama)
+
+The authenticated employee workspace uses the existing SQLAlchemy `Document`
+model. It supports filename/category/format search, exact category filtering,
+and deterministic filename ascending/descending, category and format sorting.
+There are no document timestamps in this model, so the library does not claim
+that records are recently updated. No schema changes or resets are required.
+
+From the repository root, the complete local PowerShell setup is:
+
+```powershell
+# Create the virtual environment only if absent.
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$env:HONEYVAULT_ENV = "development"
+$env:SECRET_KEY = & .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+# Optional separate local database; omit to use instance/honeyvault.sqlite3.
+$env:DATABASE_PATH = "instance/milestone8-demo.sqlite3"
+.\.venv\Scripts\python.exe -m flask --app app:create_app init-db
+.\.venv\Scripts\python.exe -m flask --app app:create_app seed-demo-documents
+.\.venv\Scripts\python.exe -m flask --app app:create_app create-user --username demo.employee --role employee
+.\.venv\Scripts\python.exe run.py
+```
+
+Existing users can skip `create-user`; existing accounts are never overwritten.
+Choose a hidden, confirmed local password of at least 12 characters. Open
+http://127.0.0.1:5001/login, sign in, then browse `/employee/documents`.
+Filter by Finance, search forecast, change the sort, open a preview and download
+its CSV. Repeat seeding to verify it reports zero additions. In another terminal:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+# Independent PUBLIC presentation preview, without authenticated downloads:
+.\.venv\Scripts\python.exe scripts/preview_frontend.py
+```
+
+The existing pytest configuration uses `generated/pytest-temp` for isolated
+Windows-compatible SQLite databases and closes database engines after tests.
+Port 5000 uses its original public fixtures and never reads protected files.
+Port 5001 uses revocable Milestone 7 sessions, active-account and exact-role checks.
+Do not enter authenticated application passwords in the public preview.
+
+`seed-demo-documents` adds four fictional university examples: handbook, workshop
+schedule, forecast and roadmap. The last two are controlled decoy examples in
+server-side metadata only. Content contains no actual employee information,
+credentials or confidential business data. IDs are deterministic UUIDs; filenames
+and categories come from these same database rows. The loader creates no users,
+rules, audit events or alerts. It skips existing IDs/storage references and never
+replaces existing files, even orphan files. Missing files for existing rows are
+not silently recreated; investigate or use a separate empty development database.
+Run the loader locally with trusted filesystem access, not through an HTTP route.
+
+Files live under ignored `instance/documents/`, outside public static storage.
+Application configuration `DOCUMENT_STORAGE_ROOT` can override this directory
+(for example in tests); it must not overlap Flask's static tree.
+`DOCUMENT_MAX_BYTES` defaults to 1 MiB per document. Only UTF-8 CSV/TXT content
+without NUL bytes is served. Both preview and download validate the same record,
+flat storage reference, matching extensions, private-root containment, regular
+file status and size. Missing, invalid, denied or unsupported records return the
+same generic 404. Symlink files are rejected. URL/query paths are never used to
+select filesystem locations. Downloads use sanitized attachment names, correct
+text types, `nosniff`, `no-store`, no ETag and no Last-Modified validators.
+Previews use Jinja escaping, including for HTML-like file contents.
+
+The shared library access policy permits **active employee accounts** to access
+**active CSV/TXT documents with public or internal sensitivity**. Archived,
+confidential and restricted records are excluded from listings, totals and
+categories and denied on direct preview/download requests. Administrators receive
+403 on employee routes; anonymous and deactivated accounts return to login.
+Decoy status neither grants nor denies access. There is no per-person/team ACL
+in the existing schema: all eligible employees share this library. Employee
+presentation dictionaries contain only ID, filename, category, format and preview
+text when requested; no ORM objects or private classifications reach templates.
+Administrator screens remain separate fixture demonstrations and do not manage
+this database-backed employee collection.
+
+Limitations: no upload/edit/delete UI, pagination, per-user grants, file encryption
+or malware scanner. Storage and the database must be writable only by the trusted
+application/operator; this does not defend against a local administrator replacing
+files during a read. Do not provision external or real confidential content.
+A future audit service should surround the shared lookup/policy/read boundary
+with actor ID, validated document ID, action, outcome and UTC time, recording
+successes and denials without contents, raw paths, session tokens or credentials.
+Future detection can consume those events and server-only decoy metadata. This
+milestone writes no audit events, evaluates no rules and generates no alerts.
