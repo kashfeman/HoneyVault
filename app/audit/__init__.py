@@ -1,1 +1,1 @@
-"""Structured security event recording boundary."""
+"""Server-side document outcome recording and administrator-only activity views."""

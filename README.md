@@ -5,12 +5,14 @@
 A university Information Security demonstration using synthetic decoy documents.
 Stack: Python 3.12, Flask, Jinja2, HTML5, CSS3, vanilla JavaScript; SQLite and Flask-SQLAlchemy.
 
-## Current status: Milestone 8 secure employee document library
+## Current status: real document activity auditing
 
 Includes a login UI, administrator dashboard, navy/cyan design system, reusable
 layouts and components, responsive navigation, activity chart, severity indicators,
 and recent-events table. All content is fictional. Employee documents on port 5001 now come from the
-database and private storage; administrator dashboards remain presentation fixtures.
+database and private storage. Authenticated document outcomes are recorded in
+AuditEvent and shown on the administrator Document Activity page. Other dashboard
+charts, alerts and event history remain explicitly fictional presentation fixtures.
 
 **The port 5000 preview is public and unprotected.** It has no authentication,
 sessions, role enforcement, database connection, downloads, audit collection or
@@ -105,7 +107,7 @@ node --test tests/test_admin_interactions.cjs tests/test_document_views.cjs test
 ```
 
 `pytest.ini` disables the problematic cache and places temporary databases under
-ignored `generated/pytest-temp` for Windows. Pytest clears that directory between
+a unique ignored `generated/pytest-<UUID>` directory for Windows. Pytest isolates
 runs: reserve it exclusively for tests and do not run simultaneous test processes
 using the same base directory. Tests use isolated databases and random ephemeral
 passwords and secrets. They never create demo accounts in the working database.
@@ -493,8 +495,8 @@ its CSV. Repeat seeding to verify it reports zero additions. In another terminal
 .\.venv\Scripts\python.exe scripts/preview_frontend.py
 ```
 
-The existing pytest configuration uses `generated/pytest-temp` for isolated
-Windows-compatible SQLite databases and closes database engines after tests.
+Pytest uses a unique writable `generated/pytest-<UUID>` directory per run,
+preserves prior run artifacts, and closes temporary SQLite engines after tests.
 Port 5000 uses its original public fixtures and never reads protected files.
 Port 5001 uses revocable Milestone 7 sessions, active-account and exact-role checks.
 Do not enter authenticated application passwords in the public preview.
@@ -542,3 +544,125 @@ with actor ID, validated document ID, action, outcome and UTC time, recording
 successes and denials without contents, raw paths, session tokens or credentials.
 Future detection can consume those events and server-only decoy metadata. This
 milestone writes no audit events, evaluates no rules and generates no alerts.
+
+## Document activity auditing
+
+The authenticated application on port **5001** now writes actual document request
+outcomes to the existing `audit_event` table. This section supersedes older
+milestone statements that audit capture is still pending. No schema migration,
+new model, database reset, reseeding or account recreation is required.
+
+| Request | Stored action |
+| --- | --- |
+| `/employee` and `/employee/documents` | `document.list` |
+| `/employee/documents/<UUID>` | `document.preview` |
+| `/employee/documents/<UUID>/download` | `document.download` |
+
+Each matched GET or HEAD request from an authenticated active account creates
+one outcome event. ID and UTC time are generated on the server; actor ID comes
+from the validated session, not parameters, headers or browser code. An existing
+validated document UUID is saved where known; collection requests and unknown or
+malformed references use a null document reference. No raw paths, invalid input,
+search strings, document contents, credentials, tokens or exception details are
+stored. This implementation does not evaluate rules or generate alerts.
+
+Outcomes are `success` (authorized response prepared), `denied` (wrong role or
+ineligible document), `unavailable` (missing/invalid reference or unavailable file),
+and `error` (other failed operation). The existing generic 403/404 behavior is
+preserved, including concealed 404s for document permission failures. Unexpected
+exceptions retain normal Flask error handling after an error event is recorded.
+Anonymous, expired, deactivated and unmatched-route requests are not attributed
+to a user and are not recorded by this authenticated document recorder.
+
+Auditing wraps the server views outside the role guard, including requests made
+without JavaScript or UI navigation. The audit transaction commits before a
+successful document response is released. Audit persistence failure rolls back
+and returns a generic **503**, with no document content or attachment. It writes
+a generic operational error to the application log without SQL/exception values.
+There is no fallback queue or retry process. A database outage may therefore
+block document access and leave an unrecorded attempt; it never intentionally
+serves a successful unaudited response.
+
+Administrators open **Document activity** in the sidebar, or visit
+http://127.0.0.1:5001/dashboard/document-activity. This page reads recorded
+`document.list`, `document.preview` and `document.download` events with no rule
+reference. It does not import fixtures, create demo audit rows or fall back to
+demonstration data when empty. Search event IDs, actor IDs/usernames, document
+UUIDs/filenames, actions and outcomes. Exact action/outcome/actor/document filters
+and inclusive UTC start/end minute controls are available. Invalid filters return
+a generic 400. Results sort by descending UTC timestamp, then descending event ID.
+Pagination returns at most 25 rows, fetching at most 26 to detect another page;
+page numbers are restricted to 1–1000. Narrow filters beyond that window. The page
+requires an active administrator account; employees receive 403 even when they
+supply another actor's ID. There is no employee history endpoint or audit export.
+
+Security Alerts, Alert Severity, Recent Events, Event History and the overview
+activity chart continue to show explicitly fictional authored examples. They are
+not derived from the new audit records. Port **5000** remains the public frontend
+preview: no database writes, authenticated file reads, or recorded activity page.
+
+### Start the existing local application
+
+Run from the repository root in PowerShell. Keep the existing `DATABASE_PATH`
+and private `SECRET_KEY` when resuming a configured environment; `.env` files
+are not automatically loaded. Do not change databases to enable auditing.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$env:HONEYVAULT_ENV = "development"
+# Generate only if a private key has not already been configured in this terminal.
+if (-not $env:SECRET_KEY) {
+    $env:SECRET_KEY = & .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+}
+.\.venv\Scripts\python.exe -m flask --app app:create_app init-db
+.\.venv\Scripts\python.exe run.py
+```
+
+`init-db` only creates missing tables and preserves existing records. On a new
+local installation only, use the existing `seed-demo-documents` and `create-user`
+commands documented above. Create separate fictional employee/admin accounts if
+needed; do not recreate existing accounts or change their passwords for this work.
+
+### Automated verification and manual browser checks
+
+```powershell
+# Each invocation uses a new path; do not point --basetemp at existing artifacts.
+$auditFocusedTemp = Join-Path (Get-Location) ("generated/pytest-audit-focused-" + [guid]::NewGuid().ToString("N"))
+.\.venv\Scripts\python.exe -m pytest -q tests/test_audit.py tests/test_documents.py::test_previews_downloads_and_metadata_confidentiality tests/test_auth.py::test_role_boundaries_and_all_admin_routes --basetemp "$auditFocusedTemp"
+$auditFullTemp = Join-Path (Get-Location) ("generated/pytest-audit-full-" + [guid]::NewGuid().ToString("N"))
+.\.venv\Scripts\python.exe -m pytest -q --basetemp "$auditFullTemp"
+node --test tests/test_admin_interactions.cjs tests/test_document_views.cjs tests/test_navigation.cjs
+git diff --check
+```
+
+Plain `python -m pytest -q` also selects a unique writable directory under ignored
+`generated/` through `tests/conftest.py`; explicit `--basetemp` is respected.
+Temporary SQLite connections are closed after tests. No command above deletes
+previous artifacts, resets the working database or operates on Git branches.
+
+1. In an employee browser session, sign in at `/login`, open the library, preview
+   a document and download it. Repeat a direct URL request with JavaScript disabled.
+2. In a separate browser profile/private session, sign in as an administrator and
+   open Document Activity. Verify the employee ID, real document UUID, UTC time,
+   list/preview/download actions and success outcomes; refresh to see new rows.
+3. Search by actor or document UUID, filter actions/outcomes and UTC minutes, and
+   use Next/Previous when more than 25 matching outcomes exist.
+4. As an administrator, request a known `/employee/documents/<UUID>` URL. It must
+   return 403 and add a denied outcome attributed to that administrator. As an
+   employee, request a nonexistent canonical UUID: expect 404 and an unavailable
+   outcome with no validated document reference. Do not modify document records
+   or remove files for manual testing; isolated pytest cases cover those failures.
+5. As an employee, visit `/dashboard/document-activity?actor=<another-user-ID>`:
+   expect 403. Signed out, expect a login redirect. Confirm Security Alerts/Event
+   History/overview charts still identify their data as fictional demonstrations.
+
+Limitations: SQLite records are not tamper-proof or externally verified. Server
+clocks must be correct. A success records response preparation, not proof of file
+reading or completed network transfer. GET refreshes and HEAD requests count as
+separate operations; listing does not produce one event per displayed document.
+Actor/document IDs are stored, but displayed names reflect current database values
+rather than immutable historical name snapshots. Retention, signed evidence,
+anonymous monitoring, automatic refresh, exports, detection, real alerts and
+investigations are not implemented. Concurrent new rows can shift offset pages;
+use date filters for a more stable review window. Substring searches may scan the
+local audit table despite bounded returned rows. No existing records are purged.

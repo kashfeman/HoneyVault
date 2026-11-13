@@ -5,6 +5,7 @@ from flask_login import current_user
 from werkzeug.utils import secure_filename
 from .documents.service import library_data, get_document, public_record, read_document
 from .auth import role_required
+from .audit.recording import audit_document
 from scripts.frontend_data import CATEGORIES, DOCUMENTS, SORTS, select_documents
 from scripts.admin_preview import admin_preview
 from scripts.admin_demo_data import dashboard_snapshot
@@ -30,6 +31,7 @@ def register_workspaces(app):
         return render_template("dashboard/index.html", **dashboard_snapshot())
 
     @app.get("/employee")
+    @audit_document("document.list")
     @role_required("employee")
     def employee():
         data = library_data({})
@@ -38,6 +40,7 @@ def register_workspaces(app):
         return render_template("employee/index.html", secure_library=True, **data)
 
     @app.get("/employee/documents", endpoint="library")
+    @audit_document("document.list")
     @role_required("employee")
     def library():
         return render_template("documents/library.html", admin=False, secure_library=True,
@@ -61,6 +64,7 @@ def register_workspaces(app):
                                category=category, sort=sort, total=len(DOCUMENTS))
 
     @app.get("/employee/documents/<document_id>")
+    @audit_document("document.preview")
     @role_required("employee")
     def document_preview(document_id):
         document = get_document(document_id)
@@ -70,6 +74,7 @@ def register_workspaces(app):
                                secure_library=True, layout="layouts/employee.html")
 
     @app.get("/employee/documents/<document_id>/download")
+    @audit_document("document.download")
     @role_required("employee")
     def document_download(document_id):
         document = get_document(document_id)

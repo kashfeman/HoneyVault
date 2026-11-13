@@ -5,7 +5,9 @@
 Milestones 2–5 supply frontend workspaces and an isolated local Flask preview.
 Milestone 6 adds the separate application factory and persistent database schema.
 Milestone 7 adds authentication, CSRF and role-protected presentation routes.
-Audit recording, document operations and detection remain planned.
+Milestone 8 adds secure employee document operations. Server-side document
+outcome auditing and a bounded administrator Document Activity page are now
+implemented. Detection, alerts and the older event history remain demonstrations.
 Build a small Flask application backed by SQLite for a controlled university
 demonstration within 10–14 days. Avoid distributed services, background workers,
 and machine-learning infrastructure unless a demonstrated need arises.
@@ -308,7 +310,7 @@ Tests cover real CSRF, session replay after logout, expiry, inactive users,
 password failure, fixed redirects, source-IP throttling, CLI account safety,
 role changes and every administrator route group, plus prior database/frontend
 contracts. Windows-compatible temporary databases live under ignored generated/
-pytest-temp; pytest owns and clears that dedicated directory. See README for
+pytest-<UUID>; every run has its own directory and preserves prior run artifacts. See README for
 exact local setup and test commands.
 
 
@@ -369,3 +371,84 @@ Tests in `tests/test_documents.py` cover these contracts using temporary SQLite
 and private storage, alongside the existing authentication and frontend suites.
 Exact setup and verification commands are in the Milestone 8 README section;
 older milestone sections describe their historical implementation boundaries.
+
+## Implemented document activity auditing
+
+This section supersedes historical milestone notes that audit capture is pending.
+The existing `AuditEvent` schema is reused unchanged: UUID ID, aware server UTC
+`occurred_at`, authenticated actor FK, nullable validated document FK, action and
+outcome. `rule_id` remains null. No table, migration, seed/reset or duplicate audit
+model is introduced; existing users, documents, events and alert records remain.
+
+`app/audit/recording.py` supplies a decorator applied outside `role_required` to
+the real employee home/library/preview/download routes. The public preview factory
+and administrator fixture routes do not use this decorator. Home/library requests
+record `document.list`; previews and downloads record `document.preview` and
+`document.download`. Role denial is captured for authenticated active users as
+well as record-policy denial. Client identity, event type, timestamps and other
+request metadata are never trusted for event creation. Each matched GET/HEAD
+operation has one outcome, not a fabricated request/response pair.
+
+After preparing the response, the decorator commits the event before releasing
+it. A role/document HTTP exception is recorded before being reraised through the
+existing safe error handler. Unexpected errors roll back the failed transaction,
+record an `error` outcome where possible and retain Flask's normal error handling.
+Audit SQLAlchemy failure rolls back, emits only a generic log message, closes any
+prepared response and returns generic 503; successful unaudited file delivery is
+blocked. Failure at authentication/session loading is outside this recorder.
+
+Outcome semantics:
+- `success`: an authorized response was prepared, including list and HEAD reads;
+  this does not prove human access or completed network delivery.
+- `denied`: authenticated wrong-role 403 or a known, ineligible document's 404.
+- `unavailable`: invalid/missing UUID or a known eligible document with a missing,
+  unsafe, oversized, unsupported or unreadable file; HTTP remains generic 404.
+- `error`: another response/error condition such as an unexpected server failure.
+
+Only canonical UUIDs that resolve to actual rows are stored as document FKs.
+Unknown/malformed references and collection access use null. No raw requested IDs,
+paths, query strings, file bodies, passwords, tokens, exception details, decoy flags
+or sensitivity fields are persisted by the recorder. Anonymous/inactive/expired
+requests and unknown route patterns have no event in this authenticated scope.
+
+`app/audit/views.py` registers `GET /dashboard/document-activity` on the backend
+only. The exact admin role and active/revocable session policy is mandatory.
+Employees cannot read anyone's audit history, even with actor/role query arguments.
+The query projects only event ID/time, actor ID/current username, document UUID/
+current filename, action and outcome. It selects only the recorder's document
+namespace with null rule reference. Legacy/unrelated events and public fixtures
+are not recast as real document activity. There is no synthetic fallback.
+
+Search uses bound SQLAlchemy expressions and escaped LIKE metacharacters across
+public reference/name/action fields. Action/outcome use allowlists; actor IDs,
+canonical document UUIDs, page numbers and UTC date controls are validated. Start
+and end minute bounds are inclusive. Descending occurred_at plus descending ID
+provides deterministic ordering for ties. Each page fetches at most 26 rows and
+renders at most 25; offsets are capped by page 1000. No unbounded actor/document
+choice lists or full-table count is loaded for the page. Existing time/actor/
+document indexes are reused; substring searches can still scan SQLite rows.
+
+The existing administrator layout/sidebar links to this view only in authenticated
+mode. Shared notices and employee preview copy now disclose document auditing.
+Security Alerts, Alert Severity, Recent Events, Event History and the overview
+chart still use authored, explicitly labeled fixtures, with links distinguishing
+the recorded activity table. There is no rule evaluation, live monitoring stream,
+alert generation or investigation implementation. Port 5000 remains public,
+fixture-only and database-independent. Authentication and response headers remain
+unchanged apart from a generic 400 for invalid filters and generic 503 wording.
+
+SQLite is local demonstration persistence, not append-only/tamper-proof evidence.
+There is no retention/deletion job, signed log, immutable name snapshot, retry
+queue, external clock verification or export endpoint. Audit failures can block
+document access. Rows arriving during navigation may shift offset pages. Future
+rules may consume the recorded actions and server-only document metadata; no
+rules, alerts, correlations or investigations are added by this change.
+
+`tests/test_audit.py` exercises real request outcomes, attribution spoofing,
+permission/missing-file behavior, commit failures and rollback, errors, reload
+persistence, ordering/ties, filter validation, search/pagination bounds, role
+boundaries and secret/content exclusion. Existing document/auth/frontend tests
+remain active. `tests/conftest.py` supplies a fresh UUID-named writable temporary
+directory under `generated/` unless `--basetemp` is explicitly supplied; existing
+test artifacts are not deleted. Exact startup, unique-directory test commands and
+manual two-session browser verification are in README's auditing section.
