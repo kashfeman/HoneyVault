@@ -315,3 +315,57 @@ exact local setup and test commands.
 Implementation references: [Flask-Login](https://flask-login.readthedocs.io/en/latest/),
 [Flask-WTF CSRF](https://flask-wtf.readthedocs.io/en/1.2.x/csrf/) and
 [Flask-Limiter](https://flask-limiter.readthedocs.io/en/stable/).
+
+## Milestone 8 employee document service
+
+The port 5001 employee routes now use `app/documents/service.py` and SQLAlchemy
+`Document` rows rather than `scripts/frontend_data.py`. Port 5000 and administrator
+presentation routes retain those fixtures. No database columns/tables changed.
+
+Request flow: Milestone 7 session/active account check -> exact employee role ->
+shared document eligibility query -> UUID lookup -> bounded private file read ->
+allowlisted presentation dictionary or attachment bytes. Employee home and library
+use the same eligibility query for records, categories and counts. Search uses
+bound SQLAlchemy expressions with escaped LIKE metacharacters. Sort expressions
+come from a fixed allowlist with filename and ID tie breakers. No timestamp sort
+is fabricated from the timestamp-free model.
+
+Eligibility requires active status, public/internal sensitivity and CSV/TXT format.
+All eligible employees share access; no per-user/team grant table exists. Decoy
+status is irrelevant to permission checks. The ORM object is retained only inside
+the service/route; templates receive ID, filename as title, category, format, and
+escaped content for preview. No classification, paths, rules or administrator
+metadata are serialized. Ineligible/missing/invalid records have generic 404s.
+
+`instance/documents` is the default private storage root, configurable through
+`DOCUMENT_STORAGE_ROOT`. It cannot overlap static storage. Only flat ASCII
+storage filenames ending in the record's CSV/TXT format are accepted; document
+filenames must also have matching extensions. Absolute paths, traversal, Windows
+separators/drive paths/alternate streams, symlink files, nonregular files, invalid
+UTF-8, NULs and files over `DOCUMENT_MAX_BYTES` (default 1 MiB) are rejected. Reads
+are bounded even if a file grows. Operators must keep the root and database
+trusted and private: checks are not an atomic defense against concurrent hostile
+local filesystem modification, hard links or a compromised host.
+
+Preview content is ordinary escaped Jinja text inside `pre`. Download reads the
+same validated bytes and uses an in-memory attachment with a Werkzeug sanitized
+filename, explicit text type, no conditional validators and no-store/nosniff.
+There is no raw-path HTTP endpoint or document file beneath static. Existing
+application-wide response headers and revocable authentication remain in force.
+
+`app/documents/demo.py` registers the explicit `seed-demo-documents` CLI. Four
+fictional fixtures (two decoys) use stable UUIDv5 identifiers and exclusive file
+creation. Existing rows/references/files are skipped, not replaced or reset.
+The command requires initialized tables and a trusted local operator. A database
+failure after file creation can leave an orphan; subsequent seeds preserve that
+file rather than overwrite it. There is no file repair or administration workflow.
+
+Later audit integration belongs at the lookup/policy/read boundary for preview
+and download, with actor/document/action/outcome/UTC context, including denied
+attempts. It must not capture raw filesystem references, file contents, search
+text, credentials or session tokens. Detection can join events with private decoy
+metadata server-side. Neither audit capture nor detection/alerts is implemented.
+Tests in `tests/test_documents.py` cover these contracts using temporary SQLite
+and private storage, alongside the existing authentication and frontend suites.
+Exact setup and verification commands are in the Milestone 8 README section;
+older milestone sections describe their historical implementation boundaries.

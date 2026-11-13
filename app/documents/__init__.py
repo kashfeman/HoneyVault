@@ -1,1 +1,1 @@
-"""Document management and synthetic decoy generation boundary."""
+"""Private synthetic document library, storage policy and local demo provisioning."""

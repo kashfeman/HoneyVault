@@ -8,8 +8,8 @@
 <section class="metrics employee-metrics" aria-label="Library summary">
 {{ metric('Library documents', total, 'Fictional business resources') }}
 {{ metric('Categories', categories|length, 'People, finance, planning and operations', 'blue') }}
-{{ metric('Document formats', '2', 'CSV tables and plain text', 'purple') }}
+{{ metric('Document formats', document_formats if secure_library else '2', 'CSV tables and plain text', 'purple') }}
 </section>
 <section class="card employee-welcome"><div><p class="eyebrow">EVERYTHING IN ONE PLACE</p><h2>Your team's resource shelf</h2><p class="muted">Browse sample working guides, schedules and planning documents. Every preview uses fictional content{% if config.get('AUTHENTICATED_APP') %} and requires an employee account{% else %} and opens without an account{% endif %}.</p></div><a class="button" href="/employee/documents?category=People">Explore people resources →</a></section>
-<section aria-labelledby="recent-title"><div class="section-heading library-section-title"><div><h2 id="recent-title">Recently updated</h2><p class="muted">Fixed demo snapshot · November 2026</p></div><a class="inline-link" href="/employee/documents">View all documents →</a></div>{{ document_cards(documents) }}</section>
+<section aria-labelledby="recent-title"><div class="section-heading library-section-title"><div><h2 id="recent-title">{{ 'Library selection' if secure_library else 'Recently updated' }}</h2><p class="muted">{{ 'Sorted by filename' if secure_library else 'Fixed demo snapshot · November 2026' }}</p></div><a class="inline-link" href="/employee/documents">View all documents →</a></div>{{ document_cards(documents) }}</section>
 {% endblock %}

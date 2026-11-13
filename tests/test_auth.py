@@ -8,15 +8,17 @@ from sqlalchemy import select
 
 from app import create_app
 from app.extensions import db
-from app.models import AuthSession, User, utc_now
+from app.models import AuthSession, User, Document, utc_now
 
 
 @pytest.fixture
 def auth_app(tmp_path):
     app = create_app({"TESTING": True, "SECRET_KEY": secrets.token_hex(32),
                       "SESSION_COOKIE_SECURE": False,
+                      "DOCUMENT_STORAGE_ROOT": str(tmp_path / "documents"),
                       "SQLALCHEMY_DATABASE_URI": "sqlite:///" + (tmp_path / "auth.sqlite3").as_posix()})
     assert app.test_cli_runner().invoke(args=["init-db"]).exit_code == 0
+    assert app.test_cli_runner().invoke(args=["seed-demo-documents"]).exit_code == 0
     passwords = {}
     with app.app_context():
         for name, role, active in [("employee", "employee", True), ("administrator", "admin", True), ("inactive", "employee", False)]:
@@ -108,7 +110,10 @@ def test_role_boundaries_and_all_admin_routes(auth_app, role):
                    "/dashboard/manage-documents", "/dashboard/manage-documents/doc-101",
                    "/dashboard/alerts", "/dashboard/alerts/ALERT-001",
                    "/dashboard/events", "/dashboard/events/DEMO-008"]
-    employee_paths = ["/employee", "/employee/documents"] + [f"/employee/documents/doc-{number}" for number in range(101, 107)]
+    with auth_app.app_context():
+        ids = list(db.session.execute(select(Document.id)).scalars())
+    employee_paths = ["/employee", "/employee/documents"] + [
+        f"/employee/documents/{identifier}{tail}" for identifier in ids for tail in ("", "/download")]
     for path in admin_paths + employee_paths:
         assert client.get(path + "?role=admin&password=private").location == "/login"
     response = sign_in(auth_app, client, role, role="admin", user_id="1", next="https://untrusted.example/")

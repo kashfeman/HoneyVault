@@ -1,6 +1,9 @@
-"""Authenticated presentation routes; no document or administrator operations."""
-from flask import abort, redirect, render_template, request, url_for
+"""Authenticated workspaces and controlled employee document access."""
+from io import BytesIO
+from flask import abort, redirect, render_template, request, url_for, send_file
 from flask_login import current_user
+from werkzeug.utils import secure_filename
+from .documents.service import library_data, get_document, public_record, read_document
 from .auth import role_required
 from scripts.frontend_data import CATEGORIES, DOCUMENTS, SORTS, select_documents
 from scripts.admin_preview import admin_preview
@@ -29,13 +32,16 @@ def register_workspaces(app):
     @app.get("/employee")
     @role_required("employee")
     def employee():
-        return render_template("employee/index.html", documents=DOCUMENTS[:3],
-                               total=len(DOCUMENTS), categories=CATEGORIES)
+        data = library_data({})
+        data["document_formats"] = len({item["format"] for item in data["documents"]})
+        data["documents"] = data["documents"][:3]
+        return render_template("employee/index.html", secure_library=True, **data)
 
     @app.get("/employee/documents", endpoint="library")
     @role_required("employee")
     def library():
-        return library_response(False)
+        return render_template("documents/library.html", admin=False, secure_library=True,
+                               layout="layouts/employee.html", **library_data(request.args))
 
     @app.get("/dashboard/documents")
     @role_required("admin")
@@ -57,7 +63,24 @@ def register_workspaces(app):
     @app.get("/employee/documents/<document_id>")
     @role_required("employee")
     def document_preview(document_id):
-        return preview_response(document_id, False)
+        document = get_document(document_id)
+        data = public_record(document)
+        data["content"] = read_document(document).decode("utf-8")
+        return render_template("documents/preview.html", document=data, admin=False,
+                               secure_library=True, layout="layouts/employee.html")
+
+    @app.get("/employee/documents/<document_id>/download")
+    @role_required("employee")
+    def document_download(document_id):
+        document = get_document(document_id)
+        data = read_document(document)
+        name = secure_filename(document.filename) or "document." + document.format.lower()
+        response = send_file(BytesIO(data), as_attachment=True, download_name=name,
+                             mimetype="text/csv" if document.format == "CSV" else "text/plain",
+                             conditional=False, etag=False, max_age=0)
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
 
     @app.get("/dashboard/documents/<document_id>")
     @role_required("admin")

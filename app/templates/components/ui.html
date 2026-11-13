@@ -7,7 +7,7 @@
 {%- endmacro %}
 
 {% macro notice() -%}
-{% if config.get('AUTHENTICATED_APP') %}<aside class="notice" aria-label="Demo disclosure"><div><strong>Authenticated demo - Fictional data only</strong><p>Account and role checks are active. Documents and administrator records are synthetic. No monitoring, detection or downloads are operational.</p></div></aside>{% else %}<aside class="notice" aria-label="Demo disclosure"><span class="notice-icon" aria-hidden="true">i</span><div><strong>Frontend preview · Demo data only</strong><p>All people, documents, metrics and events are fictional. This public preview has no authentication, access protection or threat detection.</p></div></aside>{% endif %}
+{% if config.get('AUTHENTICATED_APP') %}<aside class="notice" aria-label="Demo disclosure"><div><strong>Authenticated demo - Fictional data only</strong><p>Account and role checks are active. Documents and administrator records are synthetic. {% if request.path.startswith('/employee') %}No monitoring or detection is operational. Employee library downloads require document access checks.{% else %}No monitoring, detection or downloads are operational.{% endif %}</p></div></aside>{% else %}<aside class="notice" aria-label="Demo disclosure"><span class="notice-icon" aria-hidden="true">i</span><div><strong>Frontend preview · Demo data only</strong><p>All people, documents, metrics and events are fictional. This public preview has no authentication, access protection or threat detection.</p></div></aside>{% endif %}
 {%- endmacro %}
 
 {% macro heading(eyebrow, title, description) -%}
