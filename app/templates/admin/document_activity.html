@@ -1,0 +1,32 @@
+{% extends 'layouts/dashboard.html' %}
+{% from 'components/ui.html' import heading, badge %}
+{% block title %}Document activity{% endblock %}
+{% block content %}
+{{ heading('RECORDED APPLICATION ACTIVITY', 'Document activity', 'Server-recorded outcomes of authenticated employee document requests. All document content remains fictional.') }}
+<aside class="notice"><div><strong>Recorded activity</strong><p>These rows come from the audit database. Security alerts, alert severity, recent events and event history remain separate authored demonstrations. No detection rules run.</p></div></aside>
+<form class="card library-filters admin-filters" method="get" action="{{ url_for('audit.document_activity') }}" role="search" aria-label="Filter recorded document activity">
+  <div class="search-field"><label for="activity-search">Search</label><input id="activity-search" type="search" name="q" value="{{ filters.q }}" maxlength="120" placeholder="Event, actor, document or action"></div>
+  <div><label for="activity-action">Action</label><select id="activity-action" name="action"><option value="">All actions</option>{% for action in actions %}<option value="{{ action }}" {% if action == filters.action %}selected{% endif %}>{{ action }}</option>{% endfor %}</select></div>
+  <div><label for="activity-outcome">Outcome</label><select id="activity-outcome" name="outcome"><option value="">All outcomes</option>{% for outcome in outcomes %}<option value="{{ outcome }}" {% if outcome == filters.outcome %}selected{% endif %}>{{ outcome }}</option>{% endfor %}</select></div>
+  <div><label for="activity-actor">Actor ID</label><input id="activity-actor" name="actor" type="number" min="1" max="9999999999" value="{{ filters.actor }}"></div>
+  <div><label for="activity-document">Document UUID</label><input id="activity-document" name="document" maxlength="36" value="{{ filters.document }}"></div>
+  <div><label for="activity-start">Start (UTC)</label><input id="activity-start" name="start" type="datetime-local" value="{{ filters.start }}"></div>
+  <div><label for="activity-end">End (UTC)</label><input id="activity-end" name="end" type="datetime-local" value="{{ filters.end }}"></div>
+  <button class="button button-primary" type="submit">Apply filters</button><a class="inline-link" href="{{ url_for('audit.document_activity') }}">Reset filters</a>
+</form>
+<p role="status">Page {{ page }} · {{ records|length }} recorded outcomes shown · Newest first · Up to 25 per page</p>
+{% if records %}
+<section class="card events-card"><div class="table-scroll" role="region" aria-label="Recorded document activity table" tabindex="0"><table>
+<caption class="sr-only">Recorded document outcomes; timestamps in UTC</caption>
+<thead><tr>{% for label in ['Event / UTC time', 'Actor / ID', 'Document / UUID', 'Action', 'Outcome'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead>
+<tbody>{% for record in records %}<tr>
+  <th scope="row">{{ record.id }}<small><time datetime="{{ record.occurred_at.isoformat() }}">{{ record.occurred_at.strftime('%Y-%m-%d %H:%M:%S.%f UTC') }}</time></small></th>
+  <td>{{ record.username or 'Unavailable actor' }}<small class="block-muted">Actor ID: {{ record.actor_id if record.actor_id is not none else 'unavailable' }}</small></td>
+  <td>{% if record.document_id %}{{ record.filename or 'Unavailable name' }}<small class="block-muted">{{ record.document_id }}</small>{% else %}No validated document reference{% endif %}</td>
+  <td>{{ record.action }}</td><td>{{ badge(record.outcome) }}</td>
+</tr>{% endfor %}</tbody></table></div></section>
+{% else %}<section class="card empty-state"><h2>No recorded document activity</h2><p>No matching outcomes have been recorded. Use an employee account to browse, preview or download a document.</p></section>{% endif %}
+<nav class="library-results-bar" aria-label="Document activity pages">{% if previous %}<a class="button" rel="prev" href="{{ previous }}">Previous</a>{% endif %}{% if following %}<a class="button" rel="next" href="{{ following }}">Next</a>{% endif %}</nav>
+{% if capped %}<p class="notice">Result window reached. Narrow the date, actor or document filters.</p>{% endif %}
+<p class="library-footnote">Success means the server prepared an authorized response; it does not prove that a person read the file or completed a download. Unavailable covers missing or invalid references and files. Timestamps are server UTC. Actor and document names reflect current database values.</p>
+{% endblock %}

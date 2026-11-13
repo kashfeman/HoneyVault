@@ -88,7 +88,7 @@ def test_previews_downloads_and_metadata_confidentiality(library):
                 assert secret not in combined
         assert 'ETag' not in download.headers and 'Last-Modified' not in download.headers
     with library.app_context():
-        assert db.session.scalar(select(func.count()).select_from(AuditEvent)) == 0
+        assert db.session.scalar(select(func.count()).select_from(AuditEvent)) == 16
         assert db.session.scalar(select(func.count()).select_from(Alert)) == 0
 
 

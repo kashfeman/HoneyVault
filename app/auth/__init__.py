@@ -101,10 +101,11 @@ def init_auth(app):
                                message="The form could not be verified. Reload the page and try again."), 400
 
     for code, title, message in [
+        (400, "Invalid request", "Check the supplied filters and try again."),
         (403, "Access denied", "Your account cannot access this workspace."),
         (404, "Page not found", "This page is unavailable."),
         (429, "Please wait", "Too many sign-in attempts. Try again later."),
-        (503, "Sign-in unavailable", "The application requires secure local configuration."),
+        (503, "Service unavailable", "The application cannot complete this request. Try again later."),
     ]:
         def safe_error(error, title=title, message=message, code=code):
             return render_template("auth/error.html", title=title, message=message), code

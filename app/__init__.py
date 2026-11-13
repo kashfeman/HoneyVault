@@ -24,6 +24,8 @@ def create_app(config=None):
     from .documents.demo import init_documents
     init_documents(app)
     register_workspaces(app)
+    from .audit.views import audit
+    app.register_blueprint(audit)
 
     @app.get("/health")
     def health():

@@ -30,6 +30,8 @@ def sample_user():
 
 
 def test_factory_configuration_and_health(monkeypatch, tmp_path):
+    # Verify the secure default independently of a developer's HTTP preview shell.
+    monkeypatch.delenv("HONEYVAULT_ENV", raising=False)
     monkeypatch.setenv("SECRET_KEY", "test-only-environment-value-long-enough")
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "not-created.sqlite3"))
     app = create_app()
@@ -52,6 +54,28 @@ def test_factory_configuration_and_health(monkeypatch, tmp_path):
     testing = create_app("testing")
     assert testing.testing
     assert testing.config["SQLALCHEMY_DATABASE_URI"] == "sqlite:///:memory:"
+
+
+@pytest.mark.parametrize("environment,secure", [
+    (None, True), ("production", True), ("development", False),
+    ("staging", True), ("", True),
+])
+def test_cookie_security_environment_policy(monkeypatch, tmp_path, environment, secure):
+    monkeypatch.setenv("SECRET_KEY", "test-only-environment-value-long-enough")
+    monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "not-created.sqlite3"))
+    if environment is None:
+        monkeypatch.delenv("HONEYVAULT_ENV", raising=False)
+    else:
+        monkeypatch.setenv("HONEYVAULT_ENV", environment)
+    app = create_app()
+    assert app.config["SESSION_COOKIE_SECURE"] is secure
+    client = app.test_client()
+    response = client.get("/login", base_url="https://localhost" if secure else "http://localhost")
+    assert response.status_code == 200
+    assert client.get_cookie(app.config["SESSION_COOKIE_NAME"]).secure is secure
+    # Testing retains secure defaults; HTTP test clients opt out explicitly.
+    assert create_app("testing").config["SESSION_COOKIE_SECURE"] is True
+    assert create_app({"TESTING": True, "SESSION_COOKIE_SECURE": False}).config["SESSION_COOKIE_SECURE"] is False
 
 
 def test_initialization_repeatable_persistent_and_empty(backend):
