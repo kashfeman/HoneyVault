@@ -539,11 +539,12 @@ Limitations: no upload/edit/delete UI, pagination, per-user grants, file encrypt
 or malware scanner. Storage and the database must be writable only by the trusted
 application/operator; this does not defend against a local administrator replacing
 files during a read. Do not provision external or real confidential content.
-A future audit service should surround the shared lookup/policy/read boundary
-with actor ID, validated document ID, action, outcome and UTC time, recording
-successes and denials without contents, raw paths, session tokens or credentials.
-Future detection can consume those events and server-only decoy metadata. This
-milestone writes no audit events, evaluates no rules and generates no alerts.
+Milestone 8 originally left document auditing for a later milestone. The current
+repository already includes that later server-side recorder, described below;
+it is preserved when reviewing the employee library. It stores actor ID, validated
+document ID, action, outcome and UTC time without file contents or private paths.
+Detection rules and alert generation remain unimplemented. Future detection can
+consume those events and server-only decoy metadata.
 
 ## Document activity auditing
 

@@ -362,11 +362,13 @@ The command requires initialized tables and a trusted local operator. A database
 failure after file creation can leave an orphan; subsequent seeds preserve that
 file rather than overwrite it. There is no file repair or administration workflow.
 
-Later audit integration belongs at the lookup/policy/read boundary for preview
-and download, with actor/document/action/outcome/UTC context, including denied
-attempts. It must not capture raw filesystem references, file contents, search
-text, credentials or session tokens. Detection can join events with private decoy
-metadata server-side. Neither audit capture nor detection/alerts is implemented.
+Milestone 8 originally reserved audit integration at the lookup/policy/read boundary.
+The current repository includes the later recorder documented in the next section;
+employee-library reviews preserve that existing functionality. It stores actor,
+validated document, action, outcome and UTC context, including attributable denials,
+without file contents, private paths, search text, credentials or session tokens.
+Detection may later join events with private decoy metadata server-side; rules
+and alert generation remain unimplemented.
 Tests in `tests/test_documents.py` cover these contracts using temporary SQLite
 and private storage, alongside the existing authentication and frontend suites.
 Exact setup and verification commands are in the Milestone 8 README section;

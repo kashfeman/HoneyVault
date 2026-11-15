@@ -28,7 +28,17 @@ def user_id(app, name="employee"):
         return db.session.scalar(select(User.id).where(User.username == name))
 
 
-def test_success_attribution_timestamps_and_persistence(library):
+@pytest.mark.parametrize("same_timestamp", [False, True])
+def test_success_attribution_timestamps_and_persistence(library, monkeypatch, same_timestamp):
+    if same_timestamp:
+        timestamp = utc_now()
+
+        class FixedClock:
+            @staticmethod
+            def now(tz):
+                return timestamp.astimezone(tz)
+
+        monkeypatch.setattr("app.models.datetime", FixedClock)
     client = login(library)
     identifier = records(library)[0][0]
     before = utc_now()
@@ -40,7 +50,11 @@ def test_success_attribution_timestamps_and_persistence(library):
         assert response.status_code == 200
     after = utc_now()
     saved = events(library)
-    assert [e["action"] for e in saved] == ["document.preview", "document.download"]
+    # Clock resolution can tie successive operations; UUID order is not request order.
+    assert len(saved) == 2
+    assert {e["action"] for e in saved} == {"document.preview", "document.download"}
+    if same_timestamp:
+        assert saved[0]["occurred_at"] == saved[1]["occurred_at"]
     for event in saved:
         assert event["actor_id"] == user_id(library)
         assert event["document_id"] == identifier
@@ -255,10 +269,14 @@ def test_two_employees_cannot_spoof_attribution_or_read_each_other_history(libra
     second = login(library, "second")
     identifier = records(library)[0][0]
     for client, forged in ((first, second_id), (second, user_id(library))):
+        previous_ids = {e["id"] for e in events(library)}
         assert client.get("/employee/documents/" + identifier,
                           query_string={"actor_id": forged}).status_code == 200
+        added = [e for e in events(library) if e["id"] not in previous_ids]
+        assert len(added) == 1
+        assert added[0]["actor_id"] == (user_id(library) if client is first else second_id)
         assert client.get("/dashboard/document-activity?actor=" + str(forged)).status_code == 403
-    assert [e["actor_id"] for e in events(library)] == [user_id(library), second_id]
+    assert len(events(library)) == 2
 
 
 def test_activity_and_records_exclude_contents_paths_and_security_metadata(library):
