@@ -454,3 +454,116 @@ remain active. `tests/conftest.py` supplies a fresh UUID-named writable temporar
 directory under `generated/` unless `--basetemp` is explicitly supplied; existing
 test artifacts are not deleted. Exact startup, unique-directory test commands and
 manual two-session browser verification are in README's auditing section.
+
+## Milestone 9 administrator document/decoy management
+
+`app/documents/management.py` connects the existing backend inventory/detail
+endpoint names to real `Document` records and adds GET/POST creation and edit
+forms. `register_management` replaces only the authenticated application's view
+registry after the shared preview blueprint is registered. The public port 5000
+factory is not mutated and retains fixture simulations. The real forms do not use
+the simulation JavaScript or require JavaScript for submission. Existing admin
+layouts, filters, tables/cards and styling are reused.
+
+The module reuses `role_required('admin')`, global CSRF and existing private
+storage/read validation. Inventory queries are bounded to 26 fetched/25 rendered
+rows per page, page 1–1000, with allowlisted filters and escaped literal searches.
+Administrator presentation dictionaries omit storage references. The unchanged
+model has no creation date, so the UI explicitly says it is not recorded.
+
+New CSV/TXT content comes only from fixed server-authored synthetic templates;
+normal and decoy generation share the same bytes for each format. Form input is
+limited to safe display filenames, known categories, supported format, normal/
+decoy classification, schema-supported sensitivity/status and synthetic-use
+confirmation. Unknown/protected/duplicate fields and file uploads are rejected.
+The server generates a fresh UUID for both record ID and flat storage reference,
+checks the existing byte limit and private-root separation, stages complete bytes
+and atomically publishes without overwriting an existing entry. Supplied paths
+cannot select a storage location. New forms default to archived status.
+
+Edits preserve record ID, file format, bytes and storage reference. Changes to
+filename/category/classification/sensitivity/status are validated, and a digest of
+the current metadata is checked against the submitted version. A conditional SQL
+update matching the original metadata also prevents overwriting concurrent
+changes; stale submissions return 409. No delete or file-replacement operation
+exists, preserving all historical foreign-key references. Metadata can be managed
+when the file is missing/unsafe; the detail page shows a generic unavailable
+preview rather than an exception or private path.
+
+`document.create` and `document.update` success events are inserted into the
+existing `AuditEvent` table with the trusted administrator ID and server UTC time
+in the same database transaction as the document change. Failure rolls back both
+and returns generic 503; logs omit exception/SQL parameters. Existing audit rows
+and employee recording behavior are preserved. The existing Document Activity
+view's action allowlist now includes these real operations; no synthetic records
+are inserted into that view. Administrator metadata reads and failed management
+writes are outside this new write-event scope. Creation now compensates handled
+failures by removing only its own staging and provisional file entries, checked
+against their filesystem identities. Historical files are not swept or reused.
+Files and SQLite still do not form one crash-atomic transaction; see below.
+
+Employee DTOs and access policy are unchanged: only active CSV/TXT public/internal
+records are available, without classification, sensitivity or storage metadata.
+Decoy status neither changes that policy nor adds content markers. Administrators
+must choose fictional filenames without real information or classification hints.
+There is no free-form authoring or upload path that could introduce external data.
+
+Navigation uses the dedicated recorded Document Activity page, labels Alert
+Severity and Recent Events as Overview shortcuts, and labels the separate fixture
+library as a demo. Authenticated demo alert/event document references link to the
+fixture library rather than real inventory UUID endpoints; port 5000 links retain
+their original behavior. Security alerts, event history and charts remain authored
+demonstrations with explicit disclosure; rules/detection/investigations are absent.
+
+No schema/migration/reset is required. Existing records/files/accounts/history
+remain intact. Tests in `tests/test_management.py` cover real creation/edits,
+archive/reactivate, permissions/CSRF, input/file/mass-assignment restrictions,
+metadata confidentiality, UUID preservation, stale forms, transaction rollback,
+bounded queries, navigation and public preview isolation. See README's Milestone 9
+section for exact commands, manual browser checks and documented limitations.
+
+## Milestone 9 reliability and access-policy verification
+
+No authorization change is made: the existing employee query requires active
+CSV/TXT records with public/internal sensitivity. The separate `is_decoy` flag
+never participates in eligibility. Library results, counts, categories, direct
+preview and download all retain this policy; query parameters cannot elevate a
+record or identity. Active confidential/restricted decoys and all archived
+records are denied. Administrator inventory has an administrator-only policy
+explanation, without adding security metadata to employee view models.
+
+`service.staged_document()` implements operation-scoped file ownership. It creates
+a unique temporary file in the resolved private root, records its filesystem
+identity, writes/flushes/fsyncs the complete content, and closes the handle before
+yielding a publication callback. Management adds Document and AuditEvent rows,
+flushes them, calls that callback and commits within the context. The callback
+uses atomic no-clobber `os.link`, keeping the staging name as an ownership anchor
+until commit. It never uses overwriting replace/rename. Same-reference concurrent
+publishers have one winner; database constraints independently protect IDs and
+storage references. A hard-link-capable local filesystem is required (NTFS works).
+
+On normal success the staging name is removed. On handled failure the provisional
+published name, if created by this operation, and the staging name are removed
+only after regular-file identity and root checks. The database is rolled back.
+Cleanup does not enumerate storage, follow replacement links, delete collisions,
+remove historical orphans or touch files from another operation. Replaced files
+are conservatively retained. Cleanup errors are logged generically without paths
+and do not mask the primary failure or falsely undo a successful commit. Existing
+seed behavior is unchanged. There is no automatic historical-file cleanup route.
+
+SQLite and file storage are still separate resources. Abrupt termination, power
+loss, ambiguous commit acknowledgement, or OS errors preventing cleanup cannot be
+made crash-atomic by this protocol; manual review can be needed. There is no
+unsafe publication fallback on unsupported filesystems and no protection from a
+host administrator racing or altering the trusted private root. No existing data,
+account, audit history, notebook metadata or schema is changed by verification.
+
+`tests/test_document_policy.py` covers normal/decoy Internal visibility, Public
+visibility, Confidential/Restricted/archived exclusion, inactive accounts,
+query/ID bypass attempts, direct preview/download checks and private-metadata
+exclusion. `tests/test_creation_reliability.py` covers partial writes, fsync,
+publication/flush/commit faults, actual file and database collisions, complete
+atomic publication, concurrent publishers, replacement-file preservation and
+historical-file retention. Existing authentication, CSRF, document, management,
+audit and public-preview suites remain in place. README includes precise manual
+steps using separate administrator/employee sessions and isolated fault tests.

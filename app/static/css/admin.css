@@ -1,4 +1,8 @@
 /* Administrator-only extensions of the shared navy/cyan design system. */
+.admin-document-form { max-width: 760px; }
+.admin-document-form select { width: 100%; min-height: 48px; padding: 10px; border: 1px solid #42546c; border-radius: 8px; background: #101b2c; color: var(--text); font: inherit; }
+.synthetic-confirmation { display: flex; align-items: flex-start; gap: 12px; margin: 24px 0; }
+.synthetic-confirmation input { width: 20px; min-height: 20px; flex: 0 0 20px; }
 .admin-context { margin: -8px 0 24px; color: var(--muted); font-size: .82rem; max-width: 950px; }
 .admin-metadata { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 24px; margin: 0 0 24px; font-size: .8rem; }
 .admin-metadata dt { color: var(--muted); margin-bottom: 6px; }

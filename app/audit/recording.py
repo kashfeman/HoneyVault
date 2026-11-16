@@ -11,7 +11,7 @@ from ..extensions import db
 from ..models import AuditEvent, Document
 from ..documents.service import visible_documents
 
-ACTIONS = ("document.list", "document.preview", "document.download")
+ACTIONS = ("document.list", "document.preview", "document.download", "document.create", "document.update")
 OUTCOMES = ("success", "denied", "unavailable", "error")
 
 
