@@ -18,6 +18,8 @@ def register_workspaces(app):
     for endpoint in list(app.view_functions):
         if endpoint.startswith("admin_preview."):
             app.view_functions[endpoint] = role_required("admin")(app.view_functions[endpoint])
+    from .documents.management import register_management
+    register_management(app)
 
     @app.get("/")
     def index():

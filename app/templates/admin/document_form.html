@@ -1,0 +1,21 @@
+{% extends 'layouts/dashboard.html' %}
+{% from 'components/ui.html' import heading %}
+{% block title %}{{ 'Edit document' if document else 'Create synthetic document' }}{% endblock %}
+{% block content %}
+<a class="inline-link back-link" href="{{ url_for('admin_preview.inventory') }}">Back to document management</a>
+{{ heading('ADMINISTRATOR DOCUMENT MANAGEMENT', 'Edit document metadata' if document else 'Create synthetic document', 'Generate fictional university examples only. Documents and decoys use identical content templates.') }}
+{% for error in errors %}<p class="notice" role="alert">{{ error }}</p>{% endfor %}
+<form class="card admin-document-form" method="post" action="{{ url_for('document_edit', document_id=document.id) if document else url_for('document_create') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if document %}<input type="hidden" name="version" value="{{ values.version }}">{% endif %}
+  <label for="document-filename">Filename</label><input id="document-filename" name="filename" required maxlength="80" value="{{ values.filename }}" placeholder="Sample guide.txt">
+  <label for="document-category">Category</label><select id="document-category" name="category" required>{% for category in categories %}<option value="{{ category }}" {% if values.category == category %}selected{% endif %}>{{ category }}</option>{% endfor %}</select>
+  {% if document %}<p class="form-hint">Format: {{ document.format }}. File contents and storage remain unchanged.</p><input type="hidden" name="format" value="{{ document.format }}">{% else %}<label for="document-format">Format</label><select id="document-format" name="format" required>{% for format in ['TXT', 'CSV'] %}<option value="{{ format }}" {% if values.format == format %}selected{% endif %}>{{ format }}</option>{% endfor %}</select>{% endif %}
+  <label for="document-classification">Classification (administrator only)</label><select id="document-classification" name="classification" required>{% for classification in classifications %}<option value="{{ classification }}" {% if values.classification == classification %}selected{% endif %}>{{ classification|capitalize }}</option>{% endfor %}</select>
+  <label for="document-sensitivity">Sensitivity (administrator only)</label><select id="document-sensitivity" name="sensitivity" required>{% for sensitivity in sensitivities %}<option value="{{ sensitivity }}" {% if values.sensitivity == sensitivity %}selected{% endif %}>{{ sensitivity|capitalize }}</option>{% endfor %}</select>
+  <label for="document-status">Status</label><select id="document-status" name="status" required>{% for status in statuses %}<option value="{{ status }}" {% if values.status == status %}selected{% endif %}>{{ status|capitalize }}</option>{% endfor %}</select>
+  <p class="form-hint">Active public/internal CSV/TXT documents are available to employees. Archived, confidential and restricted records are excluded. Decoy status does not change access policy. New records default to archived. No upload, file replacement or deletion is available.</p>
+  <label class="synthetic-confirmation"><input type="checkbox" name="synthetic_ack" value="yes" required {% if values.get('synthetic_ack') == 'yes' %}checked{% endif %}> I confirm this is a fictional university demonstration document and the filename contains no real confidential information.</label>
+  <div class="dialog-actions"><a class="button" href="{{ url_for('admin_preview.document_detail', document_id=document.id) if document else url_for('admin_preview.inventory') }}">Cancel</a><button class="button button-primary" type="submit">{{ 'Save metadata' if document else 'Generate document' }}</button></div>
+</form>
+{% endblock %}

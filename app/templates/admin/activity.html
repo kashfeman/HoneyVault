@@ -17,9 +17,9 @@
 <tr {% if is_alert %}data-alert-row="{{ record.id }}"{% endif %}>
 <th scope="row"><a class="inline-link" href="{{ url_for('admin_preview.alert_detail', alert_id=record.id) if is_alert else url_for('admin_preview.event_detail', event_id=record.id) }}">{{ record.id }}</a><small><time datetime="{{ record.timestamp }}">{{ record.timestamp|replace('T',' ')|replace('Z',' UTC') }}</time></small></th>
 {% if is_alert %}<td>{{ badge(record.severity, record.severity|lower) }}</td>{% endif %}
-{% if is_alert %}<td><a href="{{ url_for('admin_preview.document_detail', document_id=record.document_id) }}">{{ documents[record.document_id].title }}</a></td>{% endif %}
+{% if is_alert %}<td><a href="{{ url_for('admin_document_preview' if config.get('AUTHENTICATED_APP') else 'admin_preview.document_detail', document_id=record.document_id) }}">{{ documents[record.document_id].title }}</a></td>{% endif %}
 <td>{{ record.actor }}</td>
-{% if not is_alert %}<td><a href="{{ url_for('admin_preview.document_detail', document_id=record.document_id) }}">{{ documents[record.document_id].title }}</a><small class="block-muted">{{ record.document_id }}</small></td>{% endif %}
+{% if not is_alert %}<td><a href="{{ url_for('admin_document_preview' if config.get('AUTHENTICATED_APP') else 'admin_preview.document_detail', document_id=record.document_id) }}">{{ documents[record.document_id].title }}</a><small class="block-muted">{{ record.document_id }}</small></td>{% endif %}
 {% if is_alert %}<td>{{ record.rule }}<small class="block-muted">{{ record.action }}</small></td><td><span data-review-status>{{ record.status }}</span></td><td>{% if record.status != 'Reviewed' %}<button class="button" type="button" data-review="{{ record.id }}" aria-label="Mark {{ record.id }} reviewed temporarily" hidden>Mark reviewed · Demo</button>{% else %}Reviewed in snapshot{% endif %}</td>
 {% else %}<td>{{ record.action }}</td><td>{{ badge(record.outcome, 'high' if record.outcome == 'Denied' else 'low' if record.outcome == 'Success' else 'neutral') }}</td><td>{{ record.rule }}</td><td>{% if record.alert_id %}<a class="inline-link" href="{{ url_for('admin_preview.alert_detail', alert_id=record.alert_id) }}">{{ record.alert_id }}</a>{% else %}No alert{% endif %}</td>{% endif %}
 </tr>{% endfor %}

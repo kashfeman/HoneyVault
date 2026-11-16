@@ -4,11 +4,12 @@
 {% block title %}Manage {{ document.title }}{% endblock %}
 {% block content %}
 <a class="inline-link back-link" href="{{ url_for('admin_preview.inventory') }}">← Document management</a>
-<div class="heading-row">{{ heading('ADMINISTRATOR DOCUMENT DETAILS', document.title, document.description) }}<button class="button" type="button" data-open-dialog hidden>Manage · Simulation</button></div>
+<div class="heading-row">{{ heading('ADMINISTRATOR DOCUMENT DETAILS', document.title, document.description) }}{% if managed %}<a class="button" href="{{ url_for('document_edit', document_id=document.id) }}">Edit metadata / status</a>{% else %}<button class="button" type="button" data-open-dialog hidden>Manage · Simulation</button>{% endif %}</div>
 {{ notice() }}
 <section class="card preview-metadata" aria-label="Administrator document metadata">{{ document_metadata(document) }}</section>
-<section class="card preview-content" aria-labelledby="admin-content"><div class="section-heading"><h2 id="admin-content">{{ document.format }} preview · Fictional content</h2>{{ badge('Demo') }}</div><pre tabindex="0" aria-label="Fictional document text">{{ document.content }}</pre></section>
-<p class="library-footnote">No file generation, upload, download or persistence. Classification labels appear only in administrator presentation views; {% if config.get('AUTHENTICATED_APP') %}these routes require an administrator account.{% else %}public demo routes are not access-protected.{% endif %}</p>
+<section class="card preview-content" aria-labelledby="admin-content"><div class="section-heading"><h2 id="admin-content">{{ document.format }} preview · Fictional content</h2>{{ badge('Demo') }}</div><pre tabindex="0" aria-label="Fictional document text">{{ document.content if document.content is not none else 'Preview unavailable. The file is missing or does not meet storage validation requirements.' }}</pre></section>
+{% if managed %}<p class="library-footnote">Synthetic document stored privately. Edit metadata to archive or reactivate; records, files and historical audit references are retained. No storage paths are displayed.</p>{% else %}<p class="library-footnote">No file generation, upload, download or persistence. Classification labels appear only in administrator presentation views; {% if config.get('AUTHENTICATED_APP') %}these routes require an administrator account.{% else %}public demo routes are not access-protected.{% endif %}</p>
 <noscript><p class="notice">Management simulation requires JavaScript; read-only details remain available.</p></noscript>
 {{ simulation_dialog(categories, document) }}
+{% endif %}
 {% endblock %}

@@ -1,7 +1,10 @@
 """Private, bounded document reads and employee-safe presentation records."""
 from pathlib import Path
+from contextlib import contextmanager
+import os
 import re
 import stat
+import tempfile
 from uuid import UUID
 
 from flask import abort, current_app
@@ -66,6 +69,71 @@ def storage_root():
     if root == static or static in root.parents or root in static.parents:
         raise ValueError("Document storage must be separate from static assets")
     return root
+
+
+def _remove_owned_file(path, identity, root):
+    """Never sweep storage or unlink a collision/replacement owned by another operation."""
+    try:
+        if path.parent.resolve() != root:
+            current_app.logger.error("Document cleanup refused a changed storage directory.")
+            return
+        actual = path.lstat()
+        if stat.S_ISREG(actual.st_mode) and os.path.samestat(actual, identity):
+            path.unlink()
+        else:
+            current_app.logger.error("Document cleanup preserved a file with changed ownership.")
+    except FileNotFoundError:
+        pass
+    except OSError:
+        # Do not expose paths or mask the original transaction failure.
+        current_app.logger.error("Owned document file cleanup failed; operator review required.")
+
+
+@contextmanager
+def staged_document(reference, data):
+    """Publish complete bytes atomically without overwrite; compensate handled failures.
+
+    The caller must flush its new row, call publish(), then commit inside this
+    context. A hard link is an atomic no-clobber publication on NTFS/POSIX local
+    filesystems. os.replace/ordinary POSIX rename could overwrite an existing file.
+    """
+    try:
+        stem, extension = reference.rsplit(".", 1)
+        valid = str(UUID(stem)) == stem and extension in ("csv", "txt")
+    except (ValueError, AttributeError):
+        valid = False
+    if not valid or len(data) > current_app.config["DOCUMENT_MAX_BYTES"]:
+        raise ValueError("Invalid managed document")
+    root = storage_root()
+    root.mkdir(parents=True, exist_ok=True)
+    final = root / reference
+    pending = identity = None
+    published = committed = False
+
+    def publish():
+        nonlocal published
+        if published or not os.path.samestat(pending.lstat(), identity) or pending.is_symlink():
+            raise ValueError("Invalid staging state")
+        os.link(pending, final, follow_symlinks=False)
+        published = True
+
+    try:
+        with tempfile.NamedTemporaryFile(mode="wb", prefix=".hv-create-", suffix=".tmp",
+                                         dir=root, delete=False) as destination:
+            pending = Path(destination.name)
+            identity = os.fstat(destination.fileno())
+            destination.write(data)
+            destination.flush()
+            os.fsync(destination.fileno())
+        yield publish
+        if not published:
+            raise ValueError("Document was not published")
+        committed = True
+    finally:
+        if pending is not None and identity is not None:
+            if published and not committed:
+                _remove_owned_file(final, identity, root)
+            _remove_owned_file(pending, identity, root)
 
 
 def read_document(document):

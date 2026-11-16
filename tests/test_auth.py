@@ -107,11 +107,12 @@ def test_csrf_validation_and_configuration(auth_app):
 def test_role_boundaries_and_all_admin_routes(auth_app, role):
     client = auth_app.test_client()
     admin_paths = ["/dashboard", "/dashboard/documents", "/dashboard/documents/doc-101",
-                   "/dashboard/manage-documents", "/dashboard/manage-documents/doc-101",
+                   "/dashboard/manage-documents", "/dashboard/manage-documents/new",
                    "/dashboard/alerts", "/dashboard/alerts/ALERT-001",
                    "/dashboard/events", "/dashboard/events/DEMO-008"]
     with auth_app.app_context():
         ids = list(db.session.execute(select(Document.id)).scalars())
+    admin_paths += [f"/dashboard/manage-documents/{identifier}{tail}" for identifier in ids for tail in ("", "/edit")]
     employee_paths = ["/employee", "/employee/documents"] + [
         f"/employee/documents/{identifier}{tail}" for identifier in ids for tail in ("", "/download")]
     for path in admin_paths + employee_paths:

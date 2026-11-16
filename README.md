@@ -5,7 +5,7 @@
 A university Information Security demonstration using synthetic decoy documents.
 Stack: Python 3.12, Flask, Jinja2, HTML5, CSS3, vanilla JavaScript; SQLite and Flask-SQLAlchemy.
 
-## Current status: real document activity auditing
+## Current status: Milestone 9 administrator document and decoy management
 
 Includes a login UI, administrator dashboard, navy/cyan design system, reusable
 layouts and components, responsive navigation, activity chart, severity indicators,
@@ -19,6 +19,13 @@ sessions, role enforcement, database connection, downloads, audit collection or
 threat detection. Its optional login values are discarded; never enter account
 passwords there. The separate port 5001 application now provides real
 authentication and role checks with fictional workspace content.
+
+
+Authenticated administrators can now generate synthetic CSV/TXT documents, manage
+real document metadata and archive/reactivate records at `/dashboard/manage-documents`.
+Employee document access and genuine audit history are preserved. See the
+Milestone 9 section below for current behavior; earlier milestone sections describe
+historical implementation boundaries.
 
 ## Milestone 7: authenticated local application
 
@@ -667,3 +674,227 @@ anonymous monitoring, automatic refresh, exports, detection, real alerts and
 investigations are not implemented. Concurrent new rows can shift offset pages;
 use date filters for a more stable review window. Substring searches may scan the
 local audit table despite bounded returned rows. No existing records are purged.
+
+## Milestone 9: administrator document and decoy management (Kashaf)
+
+The repository already provided revocable sessions, exact role checks, CSRF,
+private CSV/TXT reads, employee access, CLI demo seeding and genuine document
+activity auditing. Administrator inventory/details were fixture-backed and their
+management dialog only simulated changes. On port **5001**, the existing inventory
+and detail endpoints now use `Document` rows and new server-rendered management
+forms. Port **5000** retains the independent public fixture demonstration.
+No existing tables, users, documents, files or audit events are reset or migrated.
+
+| Route | Behavior |
+| --- | --- |
+| `GET /dashboard/manage-documents` | Real administrator inventory, filtered and paginated |
+| `GET /dashboard/manage-documents/<UUID>` | Administrator metadata and bounded private-file preview |
+| `GET /dashboard/manage-documents/new` | Synthetic document/decoy creation form |
+| `POST /dashboard/manage-documents/new` | Generate private file and create row plus audit event |
+| `GET /dashboard/manage-documents/<UUID>/edit` | Current metadata/status form |
+| `POST /dashboard/manage-documents/<UUID>/edit` | Update metadata/status plus audit event |
+
+Every route requires an active administrator session. POSTs retain the existing
+global CSRF protection. Employees receive 403, and anonymous/inactive accounts
+return to login (stale CSRF tokens can first receive 400). Unknown and invalid
+UUIDs return safe 404s. No public management API, delete endpoint or upload exists.
+
+Creation generates fixed fictional server-authored content for the selected TXT
+or CSV format. Normal documents and decoys use the **same templates**; no hidden
+label is embedded in file contents. Administrators supply only a safe display
+filename (at most 80 characters), one of Finance/Operations/People/Planning,
+classification normal/decoy, public/internal/confidential/restricted sensitivity,
+and active/archived status, with an explicit synthetic-use confirmation. Do not
+put real information or classification hints in filenames. Filenames must have a
+matching extension and a simple ASCII stem; separators, traversal, control
+characters, unsupported formats and reserved Windows names are rejected. Unknown,
+duplicate or protected form fields and file uploads are rejected server-side.
+Creation defaults to **archived**. Complete bytes are staged under the private
+root within `DOCUMENT_MAX_BYTES`, flushed and synced, then atomically published
+under a fresh UUID storage filename without overwriting any existing entry.
+No submitted filename or filesystem path selects the storage location.
+
+Metadata editing can rename the display filename, change category, classification,
+sensitivity and status. File bytes, storage reference, format and document ID stay
+unchanged. Archive/reactivate provides lifecycle control without deleting audit
+references or files. A version digest and conditional database update reject stale
+edits with 409; reload and review before resubmitting. The digest is not an audit
+signature. Missing/unsafe files display a safe preview-unavailable notice while
+metadata remains manageable. No fake creation date is invented: the unchanged
+schema does not record document creation timestamps.
+
+The inventory supports literal filename/UUID search, category/format/classification/
+sensitivity/status filters and deterministic filename/ID ordering, 25 records per
+page with a maximum page of 1000. Private storage references are never rendered,
+even in administrator forms. Real classifications and sensitivity appear only in
+protected administrator metadata views. Employee views retain their allowlisted
+presentation dictionaries and existing active public/internal CSV/TXT policy;
+archived/confidential/restricted records remain unavailable. Decoy classification
+does not grant access or alter the employee-facing presentation.
+
+Successful creation and metadata changes append `document.create` and
+`document.update` to the existing `AuditEvent` table using the current administrator
+ID and server UTC timestamp. The event and document database changes commit in
+the **same transaction**; audit/database failure rolls back and returns generic
+503. Events store no contents, private paths or before/after security metadata.
+Document Activity includes these actions alongside existing genuine employee
+outcomes. The employee recorder remains unchanged. Administrator metadata reads
+and unsuccessful management writes are not newly audited by this milestone.
+Handled creation failures remove only the current operation's staging file and
+any provisionally published file whose filesystem identity still matches. Existing
+legitimate files, historical orphans and other operations' files are preserved.
+There is no storage sweep or historical orphan cleanup. See the reliability and
+access-policy verification section below for failure boundaries.
+
+Navigation keeps **Document Activity** linked to its existing recorded activity
+page. **Alert Severity (Overview)** and **Recent Events (Overview)** are explicitly
+labeled dashboard section shortcuts. Their underlying charts and event rows remain
+fictional; no duplicate pages or detection features are added. The separate
+administrator fixture library is labeled **Demo document library**. Fixture alert/
+event document links use fixture previews rather than pretending their `doc-101`
+references are real database records.
+
+### Run and verify
+
+From the repository root in PowerShell, preserve your existing `DATABASE_PATH`
+and signing key. No reseeding or account recreation is required for this feature.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$env:HONEYVAULT_ENV = "development"
+if (-not $env:SECRET_KEY) {
+    $env:SECRET_KEY = & .\.venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+}
+.\.venv\Scripts\python.exe -m flask --app app:create_app init-db
+# Only if a local administrator account does not already exist:
+.\.venv\Scripts\python.exe -m flask --app app:create_app create-user --username demo.admin --role admin
+.\.venv\Scripts\python.exe run.py
+```
+
+Open http://127.0.0.1:5001/login, sign in as an administrator and choose Document
+management. Generate an archived normal document and a decoy, inspect their real
+UUIDs, then edit status/sensitivity. Use a separate employee session to verify
+active internal/public files are available without classification metadata, and
+archived/restricted files return 404. Check Document Activity for create/update
+rows and retained prior history. Open two edit tabs and submit one before the
+other to verify the stale form receives 409. Use filters/Next/Previous and confirm
+the Overview shortcuts and demo alert/event document links still work.
+
+```powershell
+$managementTemp = Join-Path (Get-Location) ("generated/pytest-management-" + [guid]::NewGuid().ToString("N"))
+.\.venv\Scripts\python.exe -m pytest -q tests/test_management.py tests/test_auth.py::test_role_boundaries_and_all_admin_routes --basetemp "$managementTemp"
+$managementFullTemp = Join-Path (Get-Location) ("generated/pytest-management-full-" + [guid]::NewGuid().ToString("N"))
+.\.venv\Scripts\python.exe -m pytest -q --basetemp "$managementFullTemp"
+node --test tests/test_admin_interactions.cjs tests/test_document_views.cjs tests/test_navigation.cjs
+git diff --check
+```
+
+Limitations: no arbitrary file authoring/upload/replacement, downloads for admins,
+delete/purge, bulk operations, storage quota, historical metadata snapshots or
+management-failure audit stream. Duplicate display filenames are allowed; UUIDs
+identify records. Repeated creation requests can create separate records; no
+idempotency token is implemented. Filesystem permissions must restrict the private
+root to the trusted application/operator. SQLite/file creation is not a single
+atomic resource transaction; abrupt termination, power loss or cleanup permission
+failures may still require operator review. Handled rollback cleanup is described
+below. No new schema,
+real detection, alerts or investigations are implemented. Existing audit data is
+not tamper-proof, and audit names reflect current document/user names.
+
+## Milestone 9 verification: employee policy and reliable creation
+
+Employee eligibility is independent of classification:
+
+| Record state | Employee library and direct preview/download |
+| --- | --- |
+| Active + Public/Internal + CSV/TXT, Normal or Decoy | Listed; file access also requires valid private storage/content |
+| Active + Confidential/Restricted | Excluded; direct access returns generic 404 |
+| Archived, regardless of sensitivity/classification | Excluded; direct access returns generic 404 |
+| Anonymous, expired or inactive account | Requires sign-in |
+| Administrator requesting employee-only routes | 403 under the existing exact-role policy |
+
+Both `library_data()` and `get_document()` use the same SQL eligibility query.
+Query parameters and guessed/manipulated IDs cannot override stored sensitivity,
+status or role. Employee DTOs contain only the permitted public fields and escaped
+preview text. A visible decoy has no classification marker, sensitivity label,
+storage reference or detection metadata in its HTML, attachment headers or bytes.
+Administrator inventory now explicitly explains these restrictions. Listing
+eligibility is not a promise that a backing file exists or passes validation.
+
+An active Confidential decoy such as the reported `notebook.txt` is intentionally
+excluded: Confidential sensitivity, rather than Decoy classification, is the
+reason. To intentionally expose an authorized fictional test decoy, an
+administrator may use its Edit metadata form to select **Active** and **Internal**
+(or Public), retain **Decoy**, confirm synthetic use and submit. This is a deliberate
+policy change by the administrator; the verification/fix never changes notebook
+metadata automatically. Inspect the current stored values, rather than relying
+on an older screenshot. Use port **5001**, clear library filters and refresh when
+checking visibility; port 5000 is a separate fixed public preview.
+
+Administrator creation uses the existing private root and database schema:
+
+1. Create a unique operation-owned `.hv-create-*.tmp` file inside that root.
+2. Write the full generated bytes, flush, `fsync` and close it before publication.
+3. Flush the new Document and success AuditEvent within the existing SQLite
+   transaction, detecting database key/reference collisions before publication.
+4. Publish the complete file using an atomic **no-overwrite hard link** to the
+   validated UUID CSV/TXT reference. Existing files and symlinks cause failure;
+   this deliberately avoids `os.replace` and overwriting POSIX rename behavior.
+5. Commit the database transaction. On success, unlink only the owned staging
+   name, leaving the complete final file and committed document/audit rows.
+6. On a handled write, publication, flush or commit failure, roll back the database
+   and remove the operation's provisional entries only when their filesystem
+   identity still matches. A collision or a file replaced by another operator is
+   preserved. No directory sweep, wildcard deletion or historical orphan repair
+   runs. Errors return generic 503 without storage paths or SQL values.
+
+Concurrent publishers cannot overwrite each other: atomic publication has one
+winner for a shared reference, while database uniqueness protects record IDs and
+storage references. Production-generated references remain fresh UUIDs. Cleanup
+also checks root containment and regular-file identity before unlinking; it does
+not follow or remove replacement symlinks. The existing CLI seed process is
+unchanged and remains non-destructive; this reliability change targets HTTP
+administrator creation, not historical seed/orphan recovery.
+
+The storage filesystem must support local hard links (for example NTFS on Windows
+or a normal POSIX local filesystem). Unsupported publication fails closed; there
+is no unsafe overwrite fallback. This is compensating cleanup, not a distributed
+transaction: abrupt process termination/power loss and cleanup failures caused by
+OS permissions/locks can still leave residue. Such failures log a generic review
+message. The private directory must remain trusted; this is not protection from
+a hostile host administrator or arbitrary concurrent local filesystem tampering.
+No schema change, data reset, automatic record edit or historical file deletion
+is required.
+
+Focused verification, from PowerShell at the repository root:
+
+```powershell
+$reliabilityTemp = Join-Path (Get-Location) ("generated/pytest-reliability-" + [guid]::NewGuid().ToString("N"))
+.\.venv\Scripts\python.exe -m pytest -q tests/test_creation_reliability.py tests/test_document_policy.py --basetemp "$reliabilityTemp"
+$reliabilityFullTemp = Join-Path (Get-Location) ("generated/pytest-reliability-full-" + [guid]::NewGuid().ToString("N"))
+.\.venv\Scripts\python.exe -m pytest -q --basetemp "$reliabilityFullTemp"
+node --test tests/test_admin_interactions.cjs tests/test_document_views.cjs tests/test_navigation.cjs
+git diff --check
+```
+
+Manual verification uses separate administrator and employee browser profiles:
+
+1. Sign in at `http://127.0.0.1:5001/login`. As administrator, inspect notebook.txt's
+   current status, sensitivity and classification without saving changes. Note
+   its UUID. Read the inventory's employee-policy explanation.
+2. As employee, clear all library filters and refresh. For a Confidential or
+   Restricted/archived record, verify exclusion and generic 404 at both
+   `/employee/documents/<UUID>` and `/employee/documents/<UUID>/download`, including
+   with `?role=admin&sensitivity=public`. If the record is already Active Internal,
+   it should be listed; do not change it merely to recreate an older observation.
+3. If a separate authorized test is desired, create a **new** fictional Active
+   Internal normal example and an Active Internal decoy using neutral filenames.
+   Both should appear and preview/download identically without hidden labels.
+   Create an Active Confidential test decoy and verify exclusion. Keep notebook.txt
+   unchanged unless its administrator explicitly intends to change its policy.
+4. Verify employee requests to administrator inventory/detail/edit return 403.
+   Sign out and verify protected requests redirect to login. Check Document
+   Activity for successful create/update records and retained genuine history.
+5. Use isolated pytest fault injection for storage/commit failure checks. Do not
+   interrupt the live database, remove real files, force collisions in live storage,
+   or delete historical orphans as part of manual verification.
